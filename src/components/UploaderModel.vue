@@ -32,7 +32,7 @@ export default {
 #picker-file{
   float: left;
   margin-top: 10Px;
-  padding: 20px;
+  padding: 10Px;
 }
 .file-list {
   .grid-item {

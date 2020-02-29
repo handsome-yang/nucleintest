@@ -3,6 +3,7 @@ import VueRouter from 'vue-router'
 import store from '../store/index'
 import Index from '../views/Index.vue'
 import { getUserState } from '../http/http'
+import { UrlSearch } from '../tools/index'
 
 Vue.use(VueRouter)
 
@@ -14,13 +15,13 @@ const routes = [
 	},
 	{
 		path: '/approval',
-		name:'Approval',
+		name: 'Approval',
 		component: () => import('@/views/Approval.vue')
 	},
 	{
-		path:'/enclosure',
-		name:'Enclosure',
-		component:() => import('@/views/Enclosure')
+		path: '/enclosure',
+		name: 'Enclosure',
+		component: () => import('@/views/Enclosure')
 	},
 	{
 		path: '/apply',
@@ -47,18 +48,19 @@ const router = new VueRouter({
 
 router.beforeEach((to, from, next) => {
 	if (to.path === "/") {
-		let params = {
-			token: "aa47fcf3013c81c35b39dd31821d87da1ded1de7"
-		}
-		getUserState(params).then(res => {
-			// if (!res.isOrg) {
-			if (1) {
-				store.commit('changeOrgState',1)
-				// next('/apply')
+		let localToken = UrlSearch('token');
+		store.commit("setLocalToken", localToken)
+		getUserState({ token: localToken }).then(res => {
+			store.commit('changeOrgState', res.isOrg)
+			if (!res.isOrg) { //如果普通员工，跳转到核酸检测提交页
+				next('/apply')
+			}else{
+				next()
 			}
 		});
+	}else{
+		next()
 	}
-	next()
 })
 
 export default router

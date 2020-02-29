@@ -14,7 +14,7 @@ if (process.env.NODE_ENV == 'development') {
 } else if (process.env.NODE_ENV == "debug") {
 	axios.defaults.baseURL = ''
 } else if (process.env.NODE_ENV == "production") {
-	axios.defaults.baseURL = 'http://iot.xiaofuonline.com/Staff_management_app/Home/HealthStatus';
+	axios.defaults.baseURL = 'http://iot.xiaofuonline.com/Staff_management_app/home/NucleicAcid';
 }
 
 // 设置请求超时时间
@@ -73,3 +73,17 @@ export const getSelectList = params => { return post('/getOption', QS.stringify(
 export const addFormData = params => { return post('/createNatApplication', params,{headers: { 'Content-Type':'application/x-www-form-urlencoded'}}).then(res => res.data) }
 // 获取签核中表单
 export const getSignatureInfo = params => { return post('/getSignatureInfo', QS.stringify(params)).then(res => res.data) }
+
+// 获取审核列表
+export const getSignatureList = params => { return post('/getSignatureList',QS.stringify(params)).then(res => res.data)}
+
+
+// 通过审核
+export const setPass = params => { return post('/signatureNAT',QS.stringify(params)).then(res => res.data)}
+
+// 获取附件列表
+export const getFileList = params => {return post('/getAttachmentList',QS.stringify(params)).then(res => res.data)}
+
+// 确认申请单
+
+export const confirmOd = params => { return post('/confirm',QS.stringify(params)).then(res => {res.data})}

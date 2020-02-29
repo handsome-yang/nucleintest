@@ -23,7 +23,8 @@ import {
     Popup,
     Search,
     RadioGroup, 
-    Radio
+    Radio,
+    List 
 } from 'vant';
 
 Vue.use(Button);
@@ -51,5 +52,6 @@ Vue.use(Popup);
 Vue.use(Search);
 Vue.use(RadioGroup);
 Vue.use(Radio);
-
+Vue.use(List);
+Vue.prototype.$toast = Toast
 

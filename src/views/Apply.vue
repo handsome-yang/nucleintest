@@ -28,12 +28,12 @@
       </van-cell-group>
       <van-cell-group>
         <van-cell center title="缓冲宿舍区">
-          <van-switch slot="right-icon" size="24" v-model="bufferDorm" />
+          <van-switch slot="right-icon" size="24" v-model="bufferDorm" :disabled="isCommited" />
         </van-cell>
       </van-cell-group>
       <van-cell-group>
         <van-cell center title="外住">
-          <van-switch slot="right-icon" size="24" v-model="livingOutside" />
+          <van-switch slot="right-icon" size="24" v-model="livingOutside" :disabled="isCommited" />
         </van-cell>
       </van-cell-group>
       <van-cell-group>
@@ -47,27 +47,28 @@
           placeholder="请输入留言"
           show-word-limit
           :name="messageName"
+          :disabled="isCommited"
         />
       </van-cell-group>
 
-      <uploader-model v-if="!isShowBottom" :fileList="fileList"></uploader-model>
-      <van-cell v-if="isShowBottom" title="附件" is-link to="enclosure" />
+      <uploader-model v-if="!isShowStep" :fileList="fileList"></uploader-model>
+      <van-cell @click="navToFileList" v-if="isShowStep" title="附件" is-link />
 
-      <van-steps v-if="isShowBottom" direction="vertical" :active="1">
-        <van-step v-for="(signature,signatureIndex) in signatureList" :key="signatureIndex">
-          <h3 class="step-title">{{signature.dateTime+signature.fullName}}</h3>
-          <p class="step-des" v-show="signature.suggest">{{signature.suggest}}</p>
+      <van-steps v-if="isShowStep" direction="vertical" :active="1">
+        <van-step v-for="(signature,signatureIndex) in signatureList" :key="signatureIndex" v-show="signature.signatureStatus">
+          <h3 class="step-title">{{signature.signTime + signature.name}}</h3>
+          <p class="step-des" v-show="signature.suggest">{{signature.comment}}</p>
         </van-step>
       </van-steps>
     </van-form>
     <van-action-sheet v-model="isShowSheet" :actions="sheetaActions" @select="onSelectSheet" />
-    <van-calendar v-model="isShowDatePicker" @confirm="onConfirmDate" />
+    <van-calendar v-model="isShowDatePicker" :min-date="minDate" @confirm="onConfirmDate" />
     <div class="bottom-button" v-show="isShowBottom">
-      <van-button type="default">拒绝</van-button>
-      <van-button type="primary">通过审核</van-button>
+      <van-button  @click="signature(2)" type="default">拒绝</van-button>
+      <van-button @click="signature(1)" type="primary">通过审核</van-button>
     </div>
-    <div  class="confirm-completion" v-show="isShowConfirmButton">
-      <van-button type="primary" :disabled="forbidden">确认已完成核酸检测</van-button>
+    <div class="confirm-completion" v-show="isShowConfirmButton">
+      <van-button type="primary" @click="confirmOrder" :disabled="forbidden">确认已完成核酸检测</van-button>
     </div>
   </div>
 </template>
@@ -75,7 +76,7 @@
 <script>
 // import fieldObj from "../http/field";
 import UploaderModel from "@/components/UploaderModel";
-import { getSelectList, addFormData,getUserState } from "@/http/http";
+import { getSelectList, addFormData, getUserState,getSignatureInfo,setPass,confirmOd } from "@/http/http";
 export default {
   name: "Apply",
 
@@ -88,16 +89,22 @@ export default {
   props: {},
   data() {
     return {
+      currentUser:{
+        localToken:'',
+        appId:''
+      },
       applyState: "您还未申请，请如实填写以下信息",
       isShowSheet: false,
       isShowBottom: false,
       sheetaActions: [],
+      isShowStep:false,//是否展示进度条
       currentItem: "",
       isShowDatePicker: false,
+      minDate:new Date(2010, 0, 1),
       docType: ".png, .jpg, .jpeg,.doc,.docx,.xml",
       isCommited: false,
-      isShowConfirmButton:false,//确认完成核酸检测按钮是否展示
-      forbidden:false,//是否禁用 确认完成按钮
+      isShowConfirmButton: false, //确认完成核酸检测按钮是否展示
+      forbidden: false, //是否禁用 确认完成按钮
       // fieldObj,
       formDate: [
         {
@@ -196,32 +203,48 @@ export default {
       ]
     };
   },
-
   computed: {},
 
   watch: {},
   beforeCreate() {},
   created() {
-    let params = {
-			token: "aa47fcf3013c81c35b39dd31821d87da1ded1de7"
-		}
-    getUserState(params).then(res => {
-			if(res.isFil && !this.isShowBottom){
-        // 已填写 请求数据接口，设置所有选项为禁用
-        this.isShowConfirmButton = true;
-      }else{
-        this.isShowConfirmButton = false;
-      }
-		});
-  
     if (this.$route.params.isShowBottom != undefined) {
+      // 从审批进入,拿该条信息id请求数据，禁用表单
+      this.isCommited = true
+      let appId = this.$route.params.appId;
+      // this['appId'] = appId;
+      this.currentUser.appId = appId
+      this.getOrderData("",this.currentUser.appId)
       this.$store.commit("changeTitle", "核酸检测审批");
-      this.isShowBottom = this.$route.params.isShowBottom;
+      this.isShowBottom = true;
+      this.isShowStep = true;
+      this.isShowConfirmButton = false;
+      this.$store.commit("changeRightTitle", "");
     } else {
       this.$store.commit("changeTitle", "我的申请");
-      this.$store.commit("changeRightTitle", "提交");
+      // 从主页进入，拿本机token请求验证是否填写
+      let localToken = this.$store.state.localToken
+      getUserState({token:localToken}).then(res => {
+        if (res.isFil && !this.isShowBottom) {
+          // 已填写 请求数据接口，设置所有选项为禁用
+          this.isCommited = true
+          this.$store.commit("changeRightTitle", "");
+          this.getOrderData(localToken,"");
+          this.currentUser.localToken = localToken;
+          this.isShowBottom = false;
+          this.isShowConfirmButton = true;
+          this.isShowStep = true;
+        } else {
+          // 未填写
+          this.$store.commit("changeRightTitle", "提交");
+          this.formDate.forEach(item => {
+            item.name === 'name' ? item.value = res.name : "";
+            item.name === 'staffId' ? item.value = res.staffId : "";
+          })
+          this.isShowConfirmButton = false;
+        }
+      });
     }
-    
   },
 
   mounted() {
@@ -264,6 +287,8 @@ export default {
       console.log(_formData.getAll("file"));
       addFormData(_formData).then(res => {
         console.log(res);
+        this.$toast(res.reason);
+        this.$router.back(-1)
       });
     },
     selectValue(item) {
@@ -299,13 +324,60 @@ export default {
     },
     onClickLeft() {
       if (!this.$store.state.isOrg) {
-        return
-      }else{
+        return;
+      } else {
         this.$router.back(-1);
       }
     },
     onClickRight() {
       this.$refs["form"].submit();
+    },
+    getOrderData(token,appId){
+      let params = {
+        token:token,
+        applicationCode:appId
+      }
+      // 获取已提交订单详情
+      getSignatureInfo(params).then(res => {
+        console.log(res)
+        this.formDate.forEach((item,index) => {
+          item.value = res[item.name]
+        })
+        this.leavingMessage = res['note']
+        this.bufferDorm = res.bufferDormitory == 0 ? false :true
+        this.livingOutside = res.outLive == 0 ? false : true
+        this.signatureList = res.signatureList
+      })
+    },
+    signature(status){
+      let params = {
+          token: this.$store.state.localToken,
+          status:status,
+          applicationCode:this.appId,
+          comment:'同意'
+        }
+      setPass(params).then(res => {
+        this.$toast(res.reason)
+      })
+      if(status){
+        this.$router.push('/examine')
+      }else{
+        this.$router.back(-1)
+      }
+    },
+    navToFileList(){
+      this.$router.push({path:'/enclosure',query:this.currentUser})
+    },
+    confirmOrder(){
+      let params ={
+        token:this.currentUser.localToken,
+        applicationCode:this.currentUser.appId
+      }
+      confirmOd(params).then(res => {
+        console.log('====================================');
+        console.log(res);
+        console.log('====================================');
+      })
     }
   }
 };
@@ -325,14 +397,15 @@ export default {
     margin-left: 16px;
   }
   .bottom-button {
-      position: fixed;
-      bottom: 0;
-      width: 100%;
-      display: flex;
-      button {
-        flex: 1;
-        // margin: 20px;
-      }
+    position: fixed;
+    bottom: 0;
+    z-index: 999;
+    width: 100%;
+    display: flex;
+    button {
+      flex: 1;
+      // margin: 20px;
+    }
   }
   .step-title {
     font-size: 30px;
@@ -353,16 +426,16 @@ export default {
       margin: 10px 0;
     }
   }
-  .confirm-completion{
+  .confirm-completion {
     position: fixed;
     z-index: 999;
-    bottom: 10Px;
+    bottom: 10px;
     width: 100%;
     display: flex;
-    button{
+    button {
       width: 80%;
       margin: auto;
-      border-radius:20Px; 
+      border-radius: 20px;
     }
   }
 }

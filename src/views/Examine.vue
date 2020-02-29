@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <van-nav-bar
-      title="附件"
+      title="核酸检测审批"
       left-text="返回"
       left-arrow
       fixed
@@ -66,6 +66,7 @@ export default {
 };
 </script>
 <style lang="less" scoped>
+@import url('../assets/less/navBar.less');
 .container {
   /deep/.van-cell__value {
     text-align: center;

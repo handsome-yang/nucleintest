@@ -13,38 +13,72 @@
     <p class="enter-title">可录入员工</p>
 
     <ul class="card-wrap">
-      <li class="card-class">
-        <div class="left">
-          <van-cell title="姓名" value="XXX" />
-          <van-cell title="工号" value="A0666666" />
-          <van-cell title="检测日期" value="2020/2/20" />
-          <div class="result">
-            <p>检测结果</p>
-            <p>
-              <van-radio-group v-model="resultRadio" direction="horizontal">
-                <van-radio name="1">阴性</van-radio>
-                <van-radio name="2">阳性</van-radio>
-              </van-radio-group>
-            </p>
+      <van-list v-model="loading" :finished="finished" finished-text="没有更多了" @load="onLoad" >
+        <li class="card-class" v-for="(item,index) in dataList" :key="index">
+          <div class="left">
+            <van-cell title="姓名" :value="item.name" />
+            <van-cell title="工号" :value="item.staffId" />
+            <van-cell title="检测日期" value="2020/2/20" />
+            <div class="result">
+              <p>检测结果</p>
+              <p>
+                <van-radio-group v-model="resultRadio" direction="horizontal">
+                  <van-radio name="1">阴性</van-radio>
+                  <van-radio name="2">阳性</van-radio>
+                </van-radio-group>
+              </p>
+            </div>
           </div>
-				</div>
-        <div class="right">
-					<van-button type="info">点击拍照</van-button>
-				</div>
-      </li>
+          <div class="right">
+            <van-button type="info">上传证明</van-button>
+            <van-button type="info" @click="enterResult">确认录入</van-button>
+          </div>
+        
+        </li>
+      </van-list>
     </ul>
   </div>
 </template>
 <script>
+import {getSignatureList} from '@/http/http'
 export default {
   name: "EntryResult",
   data() {
     return {
       searchKeyWord: "",
-      resultRadio:'1'
+      resultRadio:'1',
+      currentPage:1,
+      dataList:[],
+      finished:false,
+      loading:false
     };
   },
-  created() {}
+  created() {
+   
+  },
+  methods: {
+    enterResult(){
+      
+    },
+    onLoad(){
+      console.log('999')
+      let params = {
+        token:this.$store.state.localToken,
+        type:4,
+        page:this.currentPage,
+        size:10
+      }
+      getSignatureList(params).then(res => {
+        if(res.list.length > 0){
+          this.dataList.push(...res.list)
+          this.loading = false;
+          this.currentPage++
+        }else if(res.list.length == 0){
+            this.finished = true;
+        }
+    })
+    }
+  },
 };
 </script>
 <style lang="less" scoped>
@@ -91,12 +125,14 @@ export default {
         &>p:last-child{
           flex: 2;
           margin: 0;
+          font-size: 14Px;
         }
       }
     }
     & > .right {
 			flex: 1;
-			display: flex;
+      display: flex;
+      flex-direction: column;
 			&>button{
 				margin: auto;
 			}
