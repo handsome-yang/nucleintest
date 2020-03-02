@@ -298,7 +298,7 @@ export default {
       let livingOutside = this.livingOutside ? 1 : 0;
       values["bufferDormitory"] = bufferDorm;
       values["outLive"] = livingOutside;
-      values["token"] = "aa47fcf3013c81c35b39dd31821d87da1ded1de7";
+      values["token"] = this.$store.state.localToken;
 
       for (let key in values) {
         _formData.append(key, values[key]);
