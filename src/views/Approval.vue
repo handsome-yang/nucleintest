@@ -101,7 +101,7 @@ export default {
   },
   methods: {
     navToApproval(appId){
-      this.$router.push({name:'Apply',params:{isShowBottom:true,appId:appId}})
+      this.$router.push({path:'/apply',query:{isShowBottom:true,appId:appId}})
     },
     onLoad(){
       let currentPage = this.tabList[this.activeTab].currenPage;//当前标签页的currentPage

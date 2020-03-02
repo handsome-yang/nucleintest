@@ -21,7 +21,7 @@
           :placeholder="item.label"
           :right-icon="item.rightIcon"
           :readonly="item.rightIcon || item.pickerDate ? true : false"
-          :disabled="isCommited"
+          :disabled="isCommited || item.isCommited"
           :rules="[{ required: true, message: `请填写${item.label}` }]"
           @focus="item.rightIcon || item.pickerDate ? selectValue(item):false"
         />
@@ -110,46 +110,55 @@ export default {
         {
           name: "name",
           label: "用户名",
-          value: ""
+          value: "",
+          isCommited:false
         },
         {
           name: "staffId",
           label: "工号",
-          value: ""
+          value: "",
+          isCommited:false
         },
         {
           name: "gender",
           label: "性别",
           value: "",
-          rightIcon: "arrow-down"
+          id:'',
+          rightIcon: "arrow-down",
+          isCommited:false
         },
         {
           name: "age",
           label: "年龄",
-          value: ""
+          value: "",
+          isCommited:false
         },
         {
           name: "group",
           label: "次集团",
           value: "",
+          id:'',
           rightIcon: "arrow-down"
         },
         {
           name: "area",
           label: "所在厂区",
           value: "",
+          id:'',
           rightIcon: "arrow-down"
         },
         {
           name: "bu",
           label: "事业群",
           value: "",
+          id:'',
           rightIcon: "arrow-down"
         },
         {
           name: "legelPerson",
           label: "法人",
           value: "",
+          id:'',
           rightIcon: "arrow-down"
         },
         {
@@ -160,12 +169,14 @@ export default {
         {
           name: "identityCard",
           label: "身份证号",
-          value: ""
+          value: "",
+          isCommited:false
         },
         {
           name: "phone",
           label: "联系电话",
-          value: ""
+          value: "",
+          isCommited:false
         },
         {
           name: "aTime",
@@ -208,10 +219,11 @@ export default {
   watch: {},
   beforeCreate() {},
   created() {
-    if (this.$route.params.isShowBottom != undefined) {
+    
+    if (this.$route.query.isShowBottom != undefined) {
       // 从审批进入,拿该条信息id请求数据，禁用表单
       this.isCommited = true
-      let appId = this.$route.params.appId;
+      let appId = this.$route.query.appId;
       // this['appId'] = appId;
       this.currentUser.appId = appId
       this.getOrderData("",this.currentUser.appId)
@@ -240,6 +252,13 @@ export default {
           this.formDate.forEach(item => {
             item.name === 'name' ? item.value = res.name : "";
             item.name === 'staffId' ? item.value = res.staffId : "";
+            item.name === 'phone' ? item.value = res.phone : "";
+            item.name === 'gender' ? item.value = res.SEX ||'' : "";
+            item.name === 'age' ? item.value = res.AGE ||'' : "";
+            item.name === 'identityCard' ? item.value = res.IDENTITY_ID || '' : "";
+            if(item.value){
+              item.isCommited = true
+            }
           })
           this.isShowConfirmButton = false;
         }
@@ -268,25 +287,31 @@ export default {
 
   methods: {
     onSubmit(values) {
-      // console.log("submit", values);
+      console.log("submit", values);
+      this.formDate.forEach(item =>{
+        if(item.id){
+          values[item.name] = item.id
+        }
+      })
       let _formData = new FormData();
       let bufferDorm = this.bufferDorm ? 1 : 0;
       let livingOutside = this.livingOutside ? 1 : 0;
       values["bufferDormitory"] = bufferDorm;
       values["outLive"] = livingOutside;
       values["token"] = "aa47fcf3013c81c35b39dd31821d87da1ded1de7";
-      // values["file"] = this.fileList;
+
       for (let key in values) {
         _formData.append(key, values[key]);
       }
 
       this.fileList.forEach((item, index) => {
-        _formData.append("file", item);
+        _formData.append("file[]", item);
       });
 
       console.log(_formData.getAll("file"));
       addFormData(_formData).then(res => {
         console.log(res);
+        
         this.$toast(res.reason);
         this.$router.back(-1)
       });
@@ -297,12 +322,13 @@ export default {
         this.isShowDatePicker = true;
       } else {
         if (item.name === "gender") {
-          this.sheetaActions = [{ name: "男" }, { name: "女" }];
+          this.sheetaActions = [{ name: "男",id:1 }, { name: "女",id:0 }];
           this.isShowSheet = true;
         } else {
-          getSelectList({ opt: item.name }).then(res => {
+          let params = { opt: item.name,token:this.$store.state.localToken }
+          getSelectList(params).then(res => {
             let _sheetaActions = res.reduce(
-              (_arr, currentValue) => [..._arr, { name: currentValue }],
+              (_arr, currentValue) => [..._arr, { name: currentValue.name, id:currentValue.id}],
               []
             );
             this.sheetaActions = _sheetaActions;
@@ -313,6 +339,7 @@ export default {
     },
     onSelectSheet(item) {
       this.currentItem.value = item.name;
+      this.currentItem.id = item.id
       this.isShowSheet = false;
     },
     onConfirmDate(date) {
@@ -346,22 +373,26 @@ export default {
         this.leavingMessage = res['note']
         this.bufferDorm = res.bufferDormitory == 0 ? false :true
         this.livingOutside = res.outLive == 0 ? false : true
-        this.signatureList = res.signatureList
+        this.signatureList = res.signatureList;
+        if(this.signatureList.slice(-1)[0].signatureStatus == 0){
+          
+          this.forbidden = true;
+        }
       })
     },
     signature(status){
       let params = {
           token: this.$store.state.localToken,
           status:status,
-          applicationCode:this.appId,
+          applicationCode:this.currentUser.appId,
           comment:'同意'
         }
       setPass(params).then(res => {
-        this.$toast(res.reason)
+        if(res.nextNum == 0 && status){
+           this.$router.push({path:'/examine',query:this.currentUser})
+        }
       })
-      if(status){
-        this.$router.push('/examine')
-      }else{
+      if(!status){
         this.$router.back(-1)
       }
     },
@@ -377,6 +408,7 @@ export default {
         console.log('====================================');
         console.log(res);
         console.log('====================================');
+        this.$router.back(-1)
       })
     }
   }

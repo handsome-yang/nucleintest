@@ -5,12 +5,13 @@
       left-text="返回"
       left-arrow
       fixed
-      @click-left="$router.back(-1)"
+      @click-left="backClick"
       class="title-style"
       style=" background-color: #5d8eec;"
     />
     <van-cell title="检测时间" is-link :value="timeResult" @click="openDatePicker" />
-    <van-cell title="检测地点" is-link value="" />
+    <van-cell title="检测地点" @click="isShowLocation = true" is-link :value="location.name" />
+    <van-button type="info" class="confirm-button" @click="confirm">确认</van-button>
     <van-popup v-model="showDatePicker" position="bottom">
       <van-datetime-picker
         v-model="currentDate"
@@ -20,9 +21,11 @@
         @confirm="selectDate"
       />
     </van-popup>
+    <van-action-sheet v-model="isShowLocation" :actions="actionsLocation" @select="onSelect" />
   </div>
 </template>
 <script>
+import {setCheckInfo ,getSelectList} from '@/http/http'
 export default {
   data() {
     return {
@@ -30,11 +33,23 @@ export default {
       maxDate: new Date(2025, 10, 1),
       currentDate: new Date(),
 			showDatePicker: false,
-			timeResult:''
+      timeResult:'',
+      isShowLocation:false,
+      location:'',
+      actionsLocation:[
+        { name: '选项' },
+        { name: '选项' },
+        { name: '选项' }
+      ]
     };
   },
   created() {
     this.$store.commit("changeTitle", "核酸检测审批");
+    this['currentUser'] = this.$route.query;
+    let params = { opt: 'location',token:this.$store.state.localToken }
+    getSelectList(params).then(res => {
+      this.actionsLocation = res
+    })
   },
   methods: {
     openDatePicker() {
@@ -61,6 +76,25 @@ export default {
         i = "0" + i;
       }
       return i;
+    },
+    backClick(){
+      this.$router.push({path:'/apply',query:{isShowBottom:true,appId:this['currentUser'].appId}})
+    },
+    confirm(){
+      let params = {
+        token:this.$store.state.localToken,
+        applicationCode:this.currentUser.appId,
+        checkTime:this.currentDate,
+        location:this.location.id
+      }
+      setCheckInfo(params).then(res => {
+        console.log(res);
+        
+      })
+    },
+    onSelect(item){
+      this.location = item;
+      this.isShowLocation = false;
     }
   }
 };
@@ -68,8 +102,15 @@ export default {
 <style lang="less" scoped>
 @import url('../assets/less/navBar.less');
 .container {
+  display: flex;
+  flex-direction: column;
   /deep/.van-cell__value {
     text-align: center;
+  }
+  .confirm-button{
+    width:400px;
+    margin:auto;
+    margin-top:30px;
   }
 }
 </style>

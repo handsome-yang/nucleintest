@@ -22,10 +22,14 @@ axios.defaults.timeout = 60000;
 
 // http响应拦截器
 axios.interceptors.response.use(res => {
-	if(!res.data.success){
+	if(res.data['reason']){
 		Toast(res.data.reason)
 	}
-	return res
+	if(res.data.success == 1){
+		return res
+	}else{
+		return
+	}
 }, error => {
 	Toast('请求失败，请稍后重试！')
 	return Promise.reject(error)
@@ -70,7 +74,7 @@ export const getUserState = params => { return post('/getNatApplicationInfo', QS
 // 获取下拉框数据
 export const getSelectList = params => { return post('/getOption', QS.stringify(params)).then(res => res.data) }
 // 提交表单
-export const addFormData = params => { return post('/createNatApplication', params,{headers: { 'Content-Type':'application/x-www-form-urlencoded'}}).then(res => res.data) }
+export const addFormData = params => { return post('/createNatApplication', params,{headers: { 'Content-Type':'application/x-www-form-urlencoded'}}).then(res => res) }
 // 获取签核中表单
 export const getSignatureInfo = params => { return post('/getSignatureInfo', QS.stringify(params)).then(res => res.data) }
 
@@ -86,4 +90,8 @@ export const getFileList = params => {return post('/getAttachmentList',QS.string
 
 // 确认申请单
 
-export const confirmOd = params => { return post('/confirm',QS.stringify(params)).then(res => {res.data})}
+export const confirmOd = params => { return post('/confirm',QS.stringify(params)).then(res => res)}
+
+// 设置检查地点、时间
+
+export const setCheckInfo = params => {return post('/setCheckInfo',QS.stringify(params)).then(res => res.data)}
