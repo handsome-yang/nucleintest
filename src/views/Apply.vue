@@ -54,7 +54,7 @@
       <uploader-model v-if="!isShowStep" :fileList="fileList"></uploader-model>
       <van-cell @click="navToFileList" v-if="isShowStep" title="附件" is-link />
 
-      <van-steps v-if="isShowStep" direction="vertical" :active="1">
+      <van-steps v-if="isShowStep" direction="vertical" active-icon="" :active="1">
         <van-step v-for="(signature,signatureIndex) in signatureList" :key="signatureIndex" v-show="signature.signatureStatus">
           <h3 class="step-title"><span v-show="signature.signTime">{{signature.signTime}}</span>&nbsp; <span>{{signature.name}}</span></h3>
           <p class="step-des" v-show="signature.suggest">{{signature.comment}}</p>
@@ -269,8 +269,15 @@ export default {
             item.name === 'name' ? item.value = res.name : "";
             item.name === 'staffId' ? item.value = res.staffId : "";
             item.name === 'phone' ? item.value = res.phone : "";
-            item.name === 'gender' ? item.value = res.SEX ||'' : "";
-            item.name === 'age' ? item.value = res.AGE ||'' : "";
+            if(item.name === 'gender'){
+               item.value = res.SEX 
+               if(res.SEX === "男"){
+                 item.id = 1
+               }else if(res.SEX === "女"){
+                 item.id = 0
+               }
+            }
+            item.name === 'age' ? item.value = res.AGE : "";
             item.name === 'identityCard' ? item.value = res.IDENTITY_ID || '' : "";
             if(item.value){
               item.isCommited = true
@@ -317,13 +324,14 @@ export default {
           values[item.name] = item.id
         }
       })
+        console.log("submit", values);
       let _formData = new FormData();
       let bufferDorm = this.bufferDorm ? 1 : 0;
       let livingOutside = this.livingOutside ? 1 : 0;
       values["bufferDormitory"] = bufferDorm;
       values["outLive"] = livingOutside;
       values["token"] = this.$store.state.localToken;
-      values["gender"] = values["gender"] == "男" ? 1 : 0
+      // values["gender"] = values["gender"] === "男" ? 1 : 0
 
       for (let key in values) {
         _formData.append(key, values[key]);
@@ -365,6 +373,7 @@ export default {
     onSelectSheet(item) {
       this.currentItem.value = item.name;
       this.currentItem.id = item.id
+      console.log(this.currentItem)
       this.isShowSheet = false;
     },
     onConfirmDate(date) {
