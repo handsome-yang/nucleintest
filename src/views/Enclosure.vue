@@ -65,7 +65,7 @@ export default {
       }else if(process.env.NODE_ENV == "production"){
         baseUrl = "https://iot.xiaofuonline.com/Staff_management_app"
       }
-      return
+      // return
       // window.location.href = baseUrl + path
       this.$router.push({name:'preview',query:{...this['currentUser'],url:baseUrl + path}})
     }
