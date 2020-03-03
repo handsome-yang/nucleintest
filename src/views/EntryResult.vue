@@ -9,8 +9,8 @@
       class="title-style"
       style=" background-color: #5d8eec;"
     />
-    <van-search class="search-input" v-model="searchKeyWord" placeholder="请输入搜索关键词" />
-    <p class="enter-title">可录入员工</p>
+    <van-search class="search-input" v-model="searchKeyWord" @search="onSearch" placeholder="请输入搜索关键词" />
+    <p class="enter-title">{{titleText}}</p>
 
     <ul class="card-wrap">
       <van-list v-model="loading" :finished="finished" finished-text="没有更多了" @load="onLoad" >
@@ -48,6 +48,7 @@
 import {getSignatureList ,updateCheckResult} from '@/http/http'
 export default {
   name: "EntryResult",
+  inject:['reload'],
   data() {
     return {
       searchKeyWord: "",
@@ -60,6 +61,7 @@ export default {
       ],
       finished:false,
       loading:false,
+      titleText:"可录入员工"
     };
   },
   created() {
@@ -82,7 +84,7 @@ export default {
       fd.append("result",item.resultRadio)
       fd.append("file[]",item.file[0])
       updateCheckResult(fd).then(res => {
-
+        this.reload()
       })
     },
     onLoad(){
@@ -90,8 +92,10 @@ export default {
         token:this.$store.state.localToken,
         type:3,
         page:this.currentPage,
-        size:10
+        size:10,
+        search:this.searchKeyWord
       }
+      console.log(params)
       getSignatureList(params).then(res => {
         if(res.list.length > 0){
           let objArr = res.list;
@@ -107,7 +111,10 @@ export default {
             this.finished = true;
         }
     })
-    }
+    },
+    onSearch(){
+      this.onLoad()
+    },
   },
 };
 </script>
@@ -163,6 +170,7 @@ export default {
 			flex: 1;
       display: flex;
       flex-direction: column;
+      justify-content: space-around;
 			&>button{
         margin: auto;
         text-align: center;

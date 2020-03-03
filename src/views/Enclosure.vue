@@ -49,7 +49,8 @@ export default {
   methods:{
     onClickLeft(){
       if(this.currentUser.appId){
-         this.$router.push({path:'/apply',query:{isShowBottom:true,appId:this['currentUser'].appId}})
+        //  this.$router.push({path:'/apply',query:{appId:this['currentUser'].appId}})
+        this.$router.back(-1)
       }else{
         this.$router.push('/')
       }

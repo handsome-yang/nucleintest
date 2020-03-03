@@ -14,7 +14,7 @@
       <van-list v-model="loading" :finished="finished" finished-text="没有更多了" @load="onLoad" >
 
         <van-cell-group
-          @click="navToApproval(card.applicationCode)"
+          @click=" activeTab == 0 ? navToApproval(card.applicationCode) : false"
           class="dejan-cell-group"
           v-for="(card,cardIndex) in tab.tabData"
           :key="cardIndex"
@@ -124,6 +124,7 @@ export default {
     },
     checkTab(){
       console.log(this.activeTab);
+      this.onLoad()
     }
   },
 };
