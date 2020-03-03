@@ -14,7 +14,7 @@
         <div class="left"><van-icon class="icon" name="column" size="40" /></div>
         <div class="right">
           <p>{{fileItem.fileName}}</p>
-          <p>{{fileItem.fileSize}}</p>
+          <p>{{fileItem.fileSize+'kb'}}</p>
         </div>
       </li>
     </ul>
@@ -25,7 +25,6 @@ import {getFileList} from '@/http/http'
 export default {
   data() {
     return {
-      fileSize:'',
       fileList:[{
         fileName:'xxx.doc',
         fileSize:'128kb'
@@ -43,7 +42,7 @@ export default {
       console.log('====================================');
       console.log(res);
       console.log('====================================');
-      let fileInfo = res.reduce((_arr,currentItem) => [..._arr,{fileName:currentItem.filePath.substring(currentItem.filePath.lastIndexOf('/')+1),fileSize:'128kb'}],[])
+      let fileInfo = res.reduce((_arr,currentItem) => [..._arr,{fileName:currentItem.filePath.substring(currentItem.filePath.lastIndexOf('/')+1),fileSize:currentItem.size}],[])
       this.fileList = fileInfo
     })
   },

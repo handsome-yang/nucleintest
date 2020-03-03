@@ -11,7 +11,7 @@
       class="title-style"
       style=" background-color: #5d8eec;"
     />
-    <span class="apply-title">{{applyState}}</span>
+    <span v-show="applyState" class="apply-title">{{applyState}}</span>
     <van-form @submit="onSubmit" style="margin-bottom:50Px;" class="form-wrap" ref="form">
       <van-cell-group v-for="(item,index) in formDate" :key="index">
         <van-field
@@ -22,7 +22,7 @@
           :right-icon="item.rightIcon"
           :readonly="item.rightIcon || item.pickerDate ? true : false"
           :disabled="isCommited || item.isCommited"
-          :rules="[{ required: true, message: `请填写${item.label}` }]"
+          :rules="item.rules"
           @focus="item.rightIcon || item.pickerDate ? selectValue(item):false"
         />
       </van-cell-group>
@@ -56,13 +56,13 @@
 
       <van-steps v-if="isShowStep" direction="vertical" :active="1">
         <van-step v-for="(signature,signatureIndex) in signatureList" :key="signatureIndex" v-show="signature.signatureStatus">
-          <h3 class="step-title">{{signature.signTime + signature.name}}</h3>
+          <h3 class="step-title"><span v-show="signature.signTime">{{signature.signTime}}</span>&nbsp; <span>{{signature.name}}</span></h3>
           <p class="step-des" v-show="signature.suggest">{{signature.comment}}</p>
         </van-step>
       </van-steps>
     </van-form>
     <van-action-sheet v-model="isShowSheet" :actions="sheetaActions" @select="onSelectSheet" />
-    <van-calendar v-model="isShowDatePicker" :min-date="minDate" @confirm="onConfirmDate" />
+    <van-calendar v-model="isShowDatePicker" :min-date="minDate" :default-date="currentDate" @confirm="onConfirmDate" />
     <div class="bottom-button" v-show="isShowBottom">
       <van-button  @click="signature(2)" type="default">拒绝</van-button>
       <van-button @click="signature(1)" type="primary">通过审核</van-button>
@@ -101,6 +101,7 @@ export default {
       currentItem: "",
       isShowDatePicker: false,
       minDate:new Date(2010, 0, 1),
+      currentDate: new Date(),
       docType: ".png, .jpg, .jpeg,.doc,.docx,.xml",
       isCommited: false,
       isShowConfirmButton: false, //确认完成核酸检测按钮是否展示
@@ -111,13 +112,15 @@ export default {
           name: "name",
           label: "用户名",
           value: "",
-          isCommited:false
+          isCommited:false,
+          rules:[{ required: true, message: `请正确填写用户名`}]
         },
         {
           name: "staffId",
           label: "工号",
           value: "",
-          isCommited:false
+          isCommited:false,
+          rules:[{ required: true, message: `请正确填写工号`}]
         },
         {
           name: "gender",
@@ -125,69 +128,80 @@ export default {
           value: "",
           id:'',
           rightIcon: "arrow-down",
-          isCommited:false
+          isCommited:false,
+          rules:[{ required: true, message: `请正确填写性别`}]
         },
         {
           name: "age",
           label: "年龄",
           value: "",
-          isCommited:false
+          isCommited:false,
+          rules:[{ required: true, message: `请正确填写年龄`}]
         },
         {
           name: "group",
           label: "次集团",
           value: "",
           id:'',
-          rightIcon: "arrow-down"
+          rightIcon: "arrow-down",
+          rules:[{ required: true, message: `请正确填写次集团`}]
         },
         {
           name: "area",
           label: "所在厂区",
           value: "",
           id:'',
-          rightIcon: "arrow-down"
+          rightIcon: "arrow-down",
+          rules:[{ required: true, message: `请正确填写所在厂区`}]
         },
         {
           name: "bu",
           label: "事业群",
           value: "",
           id:'',
-          rightIcon: "arrow-down"
+          rightIcon: "arrow-down",
+          rules:[{ required: true, message: `请正确填写事业群`}]
         },
         {
           name: "legelPerson",
           label: "法人",
           value: "",
           id:'',
-          rightIcon: "arrow-down"
+          rightIcon: "arrow-down",
+          rules:[{ required: true, message: `请正确填写法人`}]
         },
         {
           name: "costCode",
           label: "费用代码",
-          value: ""
+          value: "",
+          rules:[{ required: true, message: `请正确填写费用代码`}]
         },
         {
           name: "identityCard",
           label: "身份证号",
           value: "",
-          isCommited:false
+          isCommited:false,
+          rules:[{ required: true, message: `请正确填写身份证号码`,validator:this.testCardId}]
         },
         {
           name: "phone",
           label: "联系电话",
           value: "",
-          isCommited:false
+          isCommited:false,
+          rules:[{ required: true, message: `请正确填写手机号码`,validator:this.testPhone}]
         },
         {
           name: "aTime",
           label: "到深日期",
           value: "",
-          pickerDate: true
+          pickerDate: true,
+          rules:[{ required: true, message: `请正确填写到深日期`}]
         },
         {
           name: "isolationDays",
           label: "隔离天数",
-          value: ""
+          value: "",
+          rules:[{ required: true, message: `请正确填写隔离天数`}]
         }
       ],
       bufferDorm: false,
@@ -232,6 +246,7 @@ export default {
       this.isShowStep = true;
       this.isShowConfirmButton = false;
       this.$store.commit("changeRightTitle", "");
+      this.applyState = "";
     } else {
       this.$store.commit("changeTitle", "我的申请");
       // 从主页进入，拿本机token请求验证是否填写
@@ -246,6 +261,7 @@ export default {
           this.isShowBottom = false;
           this.isShowConfirmButton = true;
           this.isShowStep = true;
+          this.applyState = "您已提交申请，请等待审核完成后进行核酸检测"
         } else {
           // 未填写
           this.$store.commit("changeRightTitle", "提交");
@@ -261,6 +277,7 @@ export default {
             }
           })
           this.isShowConfirmButton = false;
+          this.applyState = "您还未申请，请如实填写以下信息";
         }
       });
     }
@@ -286,6 +303,13 @@ export default {
   destroyed() {},
 
   methods: {
+    testCardId(val){
+      let regx = /^[1-9]\d{5}(18|19|20)\d{2}((0[1-9])|(1[0-2]))(([0-2][1-9])|10|20|30|31)\d{3}[0-9Xx]$/;
+      return regx.test(val)
+    },
+    testPhone(val){
+      return /^1[3456789]\d{9}$/.test(val)
+    },
     onSubmit(values) {
       console.log("submit", values);
       this.formDate.forEach(item =>{
@@ -299,6 +323,7 @@ export default {
       values["bufferDormitory"] = bufferDorm;
       values["outLive"] = livingOutside;
       values["token"] = this.$store.state.localToken;
+      values["gender"] = values["gender"] == "男" ? 1 : 0
 
       for (let key in values) {
         _formData.append(key, values[key]);
@@ -364,9 +389,11 @@ export default {
         token:token,
         applicationCode:appId
       }
+      
       // 获取已提交订单详情
       getSignatureInfo(params).then(res => {
         console.log(res)
+        this.currentUser.appId = res.appCode;
         this.formDate.forEach((item,index) => {
           item.value = res[item.name]
         })
@@ -388,11 +415,11 @@ export default {
           comment:'同意'
         }
       setPass(params).then(res => {
-        if(res.nextNum == 0 && status){
+        if(res.nextNum == 0 && status == 1){
            this.$router.push({path:'/examine',query:this.currentUser})
         }
       })
-      if(!status){
+      if(status == 2){
         this.$router.back(-1)
       }
     },

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import QS from 'qs';
 import Vue from 'vue'
-import { Toast } from 'vant';
+import { Toast,Loading } from 'vant';
 
 Vue.use(Toast);
 /**
@@ -16,16 +16,32 @@ if (process.env.NODE_ENV == 'development') {
 } else if (process.env.NODE_ENV == "production") {
 	axios.defaults.baseURL = 'http://iot.xiaofuonline.com/Staff_management_app/home/NucleicAcid';
 }
-
+var loading;
 // 设置请求超时时间
 axios.defaults.timeout = 60000;
-
+axios.interceptors.request.use(
+	req => {
+		loading = Toast.loading({
+            // mask: true, //蒙层
+            duration: 10000,       // 持续展示 toast
+            forbidClick: true, // 禁用背景点击
+            loadingType: 'spinner',
+            message: '加载中...'
+        })
+		return req
+	},
+	err => {
+		return Promise.reject(err)
+	}
+);
 // http响应拦截器
 axios.interceptors.response.use(res => {
 	if(res.data['reason']){
 		Toast(res.data.reason)
 	}
+	
 	if(res.data.success == 1){
+		loading.clear();
 		return res
 	}else{
 		return
@@ -95,3 +111,6 @@ export const confirmOd = params => { return post('/confirm',QS.stringify(params)
 // 设置检查地点、时间
 
 export const setCheckInfo = params => {return post('/setCheckInfo',QS.stringify(params)).then(res => res.data)}
+
+// 录入结果
+export const updateCheckResult = params => { return post('/updateCheckResult',params,{headers: { 'Content-Type':'application/x-www-form-urlencoded'}}).then(res => res)}

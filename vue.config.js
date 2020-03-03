@@ -1,7 +1,7 @@
 module.exports = {
     lintOnSave: false,
     outputDir: 'nucleintest',
-    publicPath:'/nucleintest',
+    publicPath:'',
     css: {
         loaderOptions: {
             postcss: {

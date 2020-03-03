@@ -18,11 +18,11 @@
           <div class="left">
             <van-cell title="姓名" :value="item.name" />
             <van-cell title="工号" :value="item.staffId" />
-            <van-cell title="检测日期" value="2020/2/20" />
+            <van-cell title="检测日期" :value="item.checkTime" />
             <div class="result">
               <p>检测结果</p>
               <p>
-                <van-radio-group v-model="resultRadio" direction="horizontal">
+                <van-radio-group v-model="item.resultRadio" direction="horizontal">
                   <van-radio name="1">阴性</van-radio>
                   <van-radio name="2">阳性</van-radio>
                 </van-radio-group>
@@ -30,8 +30,13 @@
             </div>
           </div>
           <div class="right">
-            <van-button type="info">上传证明</van-button>
-            <van-button type="info" @click="enterResult">确认录入</van-button>
+            <div @click="setCurrentItem(item)">
+              <van-uploader style="width:100px;" :after-read="readFile">
+                <van-button class="uploader-button" style="width:100px;" type="info" >{{item.currentButtonText}}</van-button>
+              </van-uploader>
+            </div>
+
+            <van-button style="width:100px" type="info" @click="enterResult(item)">确认录入</van-button>
           </div>
         
         </li>
@@ -40,7 +45,7 @@
   </div>
 </template>
 <script>
-import {getSignatureList} from '@/http/http'
+import {getSignatureList ,updateCheckResult} from '@/http/http'
 export default {
   name: "EntryResult",
   data() {
@@ -48,29 +53,54 @@ export default {
       searchKeyWord: "",
       resultRadio:'1',
       currentPage:1,
-      dataList:[],
+      buttonText:'上传证明',
+      currentItem:'',
+      dataList:[
+
+      ],
       finished:false,
-      loading:false
+      loading:false,
     };
   },
   created() {
    
   },
   methods: {
-    enterResult(){
-      
+    setCurrentItem(item){
+      this.currentItem = item;
+    },
+    readFile(file){
+      this.currentItem.file.push(file.file);
+      this.currentItem.currentButtonText = file.file.name
+    },
+    enterResult(item){
+      console.log(item)
+      let fd = new FormData()
+
+      fd.append("token",this.$store.state.localToken)
+      fd.append("applicationCode",item.applicationCode)
+      fd.append("result",item.resultRadio)
+      fd.append("file[]",item.file[0])
+      updateCheckResult(fd).then(res => {
+
+      })
     },
     onLoad(){
-      console.log('999')
       let params = {
         token:this.$store.state.localToken,
-        type:4,
+        type:3,
         page:this.currentPage,
         size:10
       }
       getSignatureList(params).then(res => {
         if(res.list.length > 0){
-          this.dataList.push(...res.list)
+          let objArr = res.list;
+          objArr.forEach(item => {
+            item["resultRadio"] = "1"
+            item["file"] = []
+            item["currentButtonText"] = "上传证明"
+          });
+          this.dataList.push(...objArr);
           this.loading = false;
           this.currentPage++
         }else if(res.list.length == 0){
@@ -134,8 +164,18 @@ export default {
       display: flex;
       flex-direction: column;
 			&>button{
-				margin: auto;
-			}
+        margin: auto;
+        text-align: center;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+      }
+      .uploader-button{
+        text-align: center;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+      }
     }
   }
 }
