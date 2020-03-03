@@ -54,7 +54,7 @@
       <uploader-model v-if="!isShowStep" :fileList="fileList"></uploader-model>
       <van-cell @click="navToFileList" v-if="isShowStep" title="附件" is-link />
 
-      <van-steps v-if="isShowStep" direction="vertical" active-icon="" :active="1">
+      <van-steps v-if="isShowStep" direction="vertical" active-icon="records" :active="1">
         <van-step v-for="(signature,signatureIndex) in signatureList" :key="signatureIndex" v-show="signature.signatureStatus">
           <h3 class="step-title"><span v-show="signature.signTime">{{signature.signTime}}</span>&nbsp; <span>{{signature.name}}</span></h3>
           <p class="step-des" v-show="signature.suggest">{{signature.comment}}</p>
@@ -79,7 +79,6 @@ import UploaderModel from "@/components/UploaderModel";
 import { getSelectList, addFormData, getUserState,getSignatureInfo,setPass,confirmOd } from "@/http/http";
 export default {
   name: "Apply",
-
   mixins: [],
 
   components: {
@@ -346,7 +345,9 @@ export default {
         console.log(res);
         
         this.$toast(res.reason);
-        this.$router.back(-1)
+        setTimeOut(() => {
+          this.$router.back(-1)
+        },2000)
       });
     },
     selectValue(item) {
@@ -426,6 +427,8 @@ export default {
       setPass(params).then(res => {
         if(res.nextNum == 0 && status == 1){
            this.$router.push({path:'/examine',query:this.currentUser})
+        }else{
+          this.$router.back(-1)
         }
       })
       if(status == 2){

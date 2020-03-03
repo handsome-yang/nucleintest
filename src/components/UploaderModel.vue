@@ -5,9 +5,12 @@
         class="grid-item"
         v-for="(file,index) in fileList"
         :key="index"
-        icon="description"
-        :text="file.name"
-      />
+      > 
+
+        <van-icon class="file-icon" size="35" name="description" />
+        <van-icon @click="clearFile(file.name)" class="clear-file" size="24" name="close" />
+        <p class="over-auto">{{file.name}}</p>
+      </van-grid-item>
       <!-- <van-grid-item> -->
         <div id="picker-file">上传附件</div>
       <!-- </van-grid-item> -->
@@ -25,7 +28,16 @@ export default {
     return {
 
     }
+  },
+  methods: {
+    clearFile(name){
+      this.fileList.forEach((item,index) =>{
+        if(item.name === name){
+          this.fileList.splice(index,1)
+        }
+      })
   }
+  },
 };
 </script>
 <style lang="less" scoped>
@@ -38,6 +50,17 @@ export default {
   .grid-item {
     /deep/ .van-grid-item__content--center {
       justify-content: space-between;
+    }
+    .clear-file{
+      position:absolute;
+      right:0;
+      top:0;
+    }
+    .over-auto{
+      width:100%;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
   }
 }

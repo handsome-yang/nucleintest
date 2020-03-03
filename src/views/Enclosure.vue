@@ -10,7 +10,7 @@
       style=" background-color: #5d8eec;"
     />
     <ul>
-      <li class="list-item" v-for="(fileItem,fileIndex) in fileList" :key="fileIndex">
+      <li class="list-item" v-for="(fileItem,fileIndex) in fileList" :key="fileIndex" @click="openFile(fileItem.fileUrl)"  >
         <div class="left"><van-icon class="icon" name="column" size="40" /></div>
         <div class="right">
           <p>{{fileItem.fileName}}</p>
@@ -42,7 +42,7 @@ export default {
       console.log('====================================');
       console.log(res);
       console.log('====================================');
-      let fileInfo = res.reduce((_arr,currentItem) => [..._arr,{fileName:currentItem.filePath.substring(currentItem.filePath.lastIndexOf('/')+1),fileSize:currentItem.size}],[])
+      let fileInfo = res.reduce((_arr,currentItem) => [..._arr,{fileName:currentItem.filePath.substring(currentItem.filePath.lastIndexOf('/')+1),fileSize:currentItem.size,fileUrl:currentItem.filePath.substring(1)}],[])
       this.fileList = fileInfo
     })
   },
@@ -54,6 +54,18 @@ export default {
       }else{
         this.$router.push('/')
       }
+    },
+    openFile(path){
+      // window.location.href = ""
+      // console.log()
+      let baseUrl = ''
+      if(process.env.NODE_ENV == "development"){
+        baseUrl = "http://zzz.ngrok.ibanzhuan.cn/Staff_management_app"
+      }else if(process.env.NODE_ENV == "development"){
+        baseUrl = "https://iot.xiaofuonline.com/Staff_management_app"
+      }
+
+      window.location.href = baseUrl + path
     }
   }
 };

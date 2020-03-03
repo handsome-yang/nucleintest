@@ -1,7 +1,7 @@
 import axios from 'axios';
 import QS from 'qs';
 import Vue from 'vue'
-import { Toast,Loading } from 'vant';
+import { Toast, Loading } from 'vant';
 
 Vue.use(Toast);
 /**
@@ -14,7 +14,7 @@ if (process.env.NODE_ENV == 'development') {
 } else if (process.env.NODE_ENV == "debug") {
 	axios.defaults.baseURL = ''
 } else if (process.env.NODE_ENV == "production") {
-	axios.defaults.baseURL = 'http://iot.xiaofuonline.com/Staff_management_app/home/NucleicAcid';
+	axios.defaults.baseURL = 'https://iot.xiaofuonline.com/Staff_management_app/home/NucleicAcid';
 }
 var loading;
 // 设置请求超时时间
@@ -22,12 +22,12 @@ axios.defaults.timeout = 60000;
 axios.interceptors.request.use(
 	req => {
 		loading = Toast.loading({
-            // mask: true, //蒙层
-            duration: 10000,       // 持续展示 toast
-            forbidClick: true, // 禁用背景点击
-            loadingType: 'spinner',
-            message: '加载中...'
-        })
+			// mask: true, //蒙层
+			duration: 10000,       // 持续展示 toast
+			forbidClick: true, // 禁用背景点击
+			loadingType: 'spinner',
+			message: '加载中...'
+		})
 		return req
 	},
 	err => {
@@ -36,14 +36,14 @@ axios.interceptors.request.use(
 );
 // http响应拦截器
 axios.interceptors.response.use(res => {
-	if(res.data['reason']){
+	if (res.data['reason']) {
 		Toast(res.data.reason)
 	}
-	
-	if(res.data.success == 1){
-		loading.clear();
+
+	if (res.data.success == 1) {
+			loading.clear();
 		return res
-	}else{
+	} else {
 		return
 	}
 }, error => {
@@ -90,27 +90,27 @@ export const getUserState = params => { return post('/getNatApplicationInfo', QS
 // 获取下拉框数据
 export const getSelectList = params => { return post('/getOption', QS.stringify(params)).then(res => res.data) }
 // 提交表单
-export const addFormData = params => { return post('/createNatApplication', params,{headers: { 'Content-Type':'application/x-www-form-urlencoded'}}).then(res => res) }
+export const addFormData = params => { return post('/createNatApplication', params, { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }).then(res => res) }
 // 获取签核中表单
 export const getSignatureInfo = params => { return post('/getSignatureInfo', QS.stringify(params)).then(res => res.data) }
 
 // 获取审核列表
-export const getSignatureList = params => { return post('/getSignatureList',QS.stringify(params)).then(res => res.data)}
+export const getSignatureList = params => { return post('/getSignatureList', QS.stringify(params)).then(res => res.data) }
 
 
 // 通过审核
-export const setPass = params => { return post('/signatureNAT',QS.stringify(params)).then(res => res.data)}
+export const setPass = params => { return post('/signatureNAT', QS.stringify(params)).then(res => res.data) }
 
 // 获取附件列表
-export const getFileList = params => {return post('/getAttachmentList',QS.stringify(params)).then(res => res.data)}
+export const getFileList = params => { return post('/getAttachmentList', QS.stringify(params)).then(res => res.data) }
 
 // 确认申请单
 
-export const confirmOd = params => { return post('/confirm',QS.stringify(params)).then(res => res)}
+export const confirmOd = params => { return post('/confirm', QS.stringify(params)).then(res => res) }
 
 // 设置检查地点、时间
 
-export const setCheckInfo = params => {return post('/setCheckInfo',QS.stringify(params)).then(res => res.data)}
+export const setCheckInfo = params => { return post('/setCheckInfo', QS.stringify(params)).then(res => res.data) }
 
 // 录入结果
-export const updateCheckResult = params => { return post('/updateCheckResult',params,{headers: { 'Content-Type':'application/x-www-form-urlencoded'}}).then(res => res)}
+export const updateCheckResult = params => { return post('/updateCheckResult', params, { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }).then(res => res) }
