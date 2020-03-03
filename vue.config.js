@@ -1,7 +1,7 @@
 module.exports = {
 	lintOnSave: false,
 	outputDir: 'nucleintest',
-	publicPath: '',
+	publicPath: '/nucleintest',
 	devServer: {
 		overlay: {
 			warning: false,
