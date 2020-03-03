@@ -36,12 +36,12 @@ axios.interceptors.request.use(
 );
 // http响应拦截器
 axios.interceptors.response.use(res => {
-	if (res.data['reason']) {
-		Toast(res.data.reason)
-	}
-
+	loading.clear()
+	if (res.data['reason'] || res.reason) {
+		let message = res.data['reason'] || res.reason
+		Toast(message)
+	}	
 	if (res.data.success == 1) {
-			loading.clear();
 		return res
 	} else {
 		return

@@ -2,8 +2,6 @@
   <div class="container">
     <van-nav-bar
       title="核酸检测"
-      left-text="返回"
-      left-arrow
       fixed
       @click-left="onClickLeft"
       class="title-style"
@@ -54,7 +52,9 @@ export default {
   },
   methods: {
     onClickLeft() {
-      this.$router.back(-1);
+      // this.$router.back(-1);
+      // this.$toast('首页')
+      return
     },
   },
 };

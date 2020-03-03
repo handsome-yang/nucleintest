@@ -32,7 +32,8 @@ export default {
     };
   },
   created() {
-    this['currentUser'] = this.$route.query;
+    sessionStorage.setItem('currentUser',JSON.stringify(this.$route.query))
+    this['currentUser'] = this.$route.query || sessionStorage.getItem('currentUser');
     let params = {
       token:this['currentUser'].localToken,
       applicationCode:this['currentUser'].appId
@@ -49,8 +50,8 @@ export default {
   methods:{
     onClickLeft(){
       if(this.currentUser.appId){
-        //  this.$router.push({path:'/apply',query:{appId:this['currentUser'].appId}})
-        this.$router.back(-1)
+         this.$router.push({path:'/apply',query:{appId:this['currentUser'].appId}})
+        // this.$router.back(-1)
       }else{
         this.$router.push('/')
       }
@@ -61,11 +62,12 @@ export default {
       let baseUrl = ''
       if(process.env.NODE_ENV == "development"){
         baseUrl = "http://zzz.ngrok.ibanzhuan.cn/Staff_management_app"
-      }else if(process.env.NODE_ENV == "development"){
+      }else if(process.env.NODE_ENV == "production"){
         baseUrl = "https://iot.xiaofuonline.com/Staff_management_app"
       }
-
-      window.location.href = baseUrl + path
+      return
+      // window.location.href = baseUrl + path
+      this.$router.push({name:'preview',query:{...this['currentUser'],url:baseUrl + path}})
     }
   }
 };

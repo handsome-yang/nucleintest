@@ -38,6 +38,11 @@ const routes = [
 		name: 'EntryResult',
 		component: () => import('@/views/EntryResult.vue')
 	},
+	{
+		path: '/preview',
+		name: 'preview',
+		component: () => import('@/views/Preview.vue')
+	}
 ]
 
 const router = new VueRouter({
@@ -48,8 +53,9 @@ const router = new VueRouter({
 
 router.beforeEach((to, from, next) => {
 	if (to.path === "/") {
-		let localToken = UrlSearch('token');
+		let localToken = UrlSearch('token') || sessionStorage.getItem('setLocalToken');
 		store.commit("setLocalToken", localToken)
+		sessionStorage.setItem('setLocalToken',localToken)
 		getUserState({ token: localToken }).then(res => {
 			store.commit('changeOrgState', res.isOrg)
 			if (!res.isOrg) { //如果普通员工，跳转到核酸检测提交页

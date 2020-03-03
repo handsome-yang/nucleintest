@@ -14,7 +14,7 @@
       <van-list v-model="loading" :finished="finished" finished-text="没有更多了" @load="onLoad" >
 
         <van-cell-group
-          @click=" activeTab == 0 ? navToApproval(card.applicationCode) : false"
+          @click="navToApproval(card.applicationCode)"
           class="dejan-cell-group"
           v-for="(card,cardIndex) in tab.tabData"
           :key="cardIndex"
@@ -63,18 +63,7 @@ export default {
         {
           name: "未审核",
           tabData: [
-            {
-              name: "张三",
-              jobNumber: "A888888",
-              arriveDate: "2020/02/20",
-              isolationDays: "1"
-            },
-            {
-              name: "张三",
-              jobNumber: "A888888",
-              arriveDate: "2020/02/20",
-              isolationDays: "1"
-            }
+          
           ],
           currenPage:1
         },
@@ -101,7 +90,11 @@ export default {
   },
   methods: {
     navToApproval(appId){
-      this.$router.push({path:'/apply',query:{isShowBottom:true,appId:appId}})
+      if(this.activeTab == 0 ){
+        this.$router.push({path:'/apply',query:{isShowBottom:true,appId:appId}})
+      }else{
+       this.$router.push({path:'/apply',query:{isShowBottom:false,appId:appId}}) 
+      }
     },
     onLoad(){
       let currentPage = this.tabList[this.activeTab].currenPage;//当前标签页的currentPage

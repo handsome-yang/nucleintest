@@ -54,7 +54,7 @@
       <uploader-model v-if="!isShowStep" :fileList="fileList"></uploader-model>
       <van-cell @click="navToFileList" v-if="isShowStep" title="附件" is-link />
 
-      <van-steps v-if="isShowStep" direction="vertical" active-icon="records" :active="1">
+      <van-steps v-if="isShowStep" style="padding-bottom:40px;" direction="vertical" active-icon="records" :active="1">
         <van-step v-for="(signature,signatureIndex) in signatureList" :key="signatureIndex" v-show="signature.signatureStatus">
           <h3 class="step-title"><span v-show="signature.signTime">{{signature.signTime}}</span>&nbsp; <span>{{signature.name}}</span></h3>
           <p class="step-des" v-show="signature.suggest">{{signature.comment}}</p>
@@ -79,13 +79,10 @@ import UploaderModel from "@/components/UploaderModel";
 import { getSelectList, addFormData, getUserState,getSignatureInfo,setPass,confirmOd } from "@/http/http";
 export default {
   name: "Apply",
-  mixins: [],
-
+  inject:['reload'],
   components: {
     UploaderModel
   },
-
-  props: {},
   data() {
     return {
       currentUser:{
@@ -232,8 +229,9 @@ export default {
   watch: {},
   beforeCreate() {},
   created() {
+    console.log(this.$route.query);
     
-    if (this.$route.query.isShowBottom != undefined) {
+    if (this.$route.query.appId) {
       // 从审批进入,拿该条信息id请求数据，禁用表单
       this.isCommited = true
       let appId = this.$route.query.appId;
@@ -241,7 +239,11 @@ export default {
       this.currentUser.appId = appId
       this.getOrderData("",this.currentUser.appId)
       this.$store.commit("changeTitle", "核酸检测审批");
-      this.isShowBottom = true;
+      if(this.$parent.isLoad){
+        this.isShowBottom = false;
+      }else{
+        this.isShowBottom = this.$route.query.isShowBottom
+      }
       this.isShowStep = true;
       this.isShowConfirmButton = false;
       this.$store.commit("changeRightTitle", "");
@@ -345,9 +347,7 @@ export default {
         console.log(res);
         
         this.$toast(res.reason);
-        setTimeOut(() => {
-          this.$router.back(-1)
-        },2000)
+        this.reload()
       });
     },
     selectValue(item) {
@@ -388,7 +388,10 @@ export default {
       if (!this.$store.state.isOrg) {
         return;
       } else {
-        this.$router.back(-1);
+        // this.$router.back(-1);
+        console.log(this.$store.state.localToken);
+        
+        this.$router.push({name:'Index',params:{token:this.$store.state.localToken}})
       }
     },
     onClickRight() {
@@ -411,8 +414,8 @@ export default {
         this.bufferDorm = res.bufferDormitory == 0 ? false :true
         this.livingOutside = res.outLive == 0 ? false : true
         this.signatureList = res.signatureList;
-        if(this.signatureList.slice(-1)[0].signatureStatus == 0){
-          
+        let lastele = this.signatureList.slice(-1)[0]
+        if(lastele.signatureStatus == 0 || lastele.signatureFlag == 0){
           this.forbidden = true;
         }
       })
@@ -424,15 +427,17 @@ export default {
           applicationCode:this.currentUser.appId,
           comment:'同意'
         }
+
       setPass(params).then(res => {
         if(res.nextNum == 0 && status == 1){
            this.$router.push({path:'/examine',query:this.currentUser})
         }else{
-          this.$router.back(-1)
+          // this.$router.back(-1)
+          this.reload();
         }
       })
       if(status == 2){
-        this.$router.back(-1)
+        this.reload()
       }
     },
     navToFileList(){
@@ -447,7 +452,8 @@ export default {
         console.log('====================================');
         console.log(res);
         console.log('====================================');
-        this.$router.back(-1)
+        // this.$router.back(-1)
+        this.reload()
       })
     }
   }

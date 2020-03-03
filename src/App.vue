@@ -15,15 +15,18 @@ export default {
   },
   data(){
     return {
-      isRouterAlive :true
+      isRouterAlive :true,
+      isLoad:false
     }
   },
   methods: {
     reload(){
       this.isRouterAlive = false
       this.$nextTick(function(){
-        this.isRouterAlive = true
+        this.isRouterAlive = true;
+        this.isLoad = true
       })
+      
     }
   },
 }
