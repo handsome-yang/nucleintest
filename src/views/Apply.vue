@@ -2,9 +2,9 @@
   <div class="container">
     <van-nav-bar
       :title="$store.state.pageTitle"
-      left-text="返回"
+      :left-text="backText"
       :right-text="$store.state.rightText"
-      left-arrow
+      :left-arrow="isShowBack"
       fixed
       @click-left="onClickLeft"
       @click-right="onClickRight"
@@ -90,6 +90,8 @@ export default {
         appId:''
       },
       applyState: "您还未申请，请如实填写以下信息",
+      backText:"返回",
+      isShowBack:true,
       isShowSheet: false,
       isShowBottom: false,
       sheetaActions: [],
@@ -132,7 +134,7 @@ export default {
           label: "年龄",
           value: "",
           isCommited:false,
-          rules:[{ required: true, message: `请正确填写年龄`}]
+          rules:[{ required: true, message: `请正确填写年龄`,validator:this.testAge}]
         },
         {
           name: "group",
@@ -229,6 +231,10 @@ export default {
   watch: {},
   beforeCreate() {},
   created() {
+    if(!this.$store.state.isOrg){
+      this.backText = "";
+      this.isShowBack = false;
+    }
     console.log(this.$route.query);
     
     if (this.$route.query.appId) {
@@ -318,6 +324,9 @@ export default {
     testPhone(val){
       return /^1[3456789]\d{9}$/.test(val)
     },
+    testAge(val){
+      return /^(?:[1-9][0-9]?|1[01][0-9]|120)$/.test(val)
+    },
     onSubmit(values) {
       console.log("submit", values);
       this.formDate.forEach(item =>{
@@ -325,7 +334,6 @@ export default {
           values[item.name] = item.id
         }
       })
-        console.log("submit", values);
       let _formData = new FormData();
       let bufferDorm = this.bufferDorm ? 1 : 0;
       let livingOutside = this.livingOutside ? 1 : 0;
@@ -345,7 +353,7 @@ export default {
       console.log(_formData.getAll("file"));
       addFormData(_formData).then(res => {
         console.log(res);
-        
+        this.$store.state.rightText = "";
         this.$toast(res.reason);
         this.reload()
       });
