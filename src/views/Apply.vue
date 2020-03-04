@@ -50,24 +50,7 @@
           :disabled="isCommited"
         />
       </van-cell-group>
-      <div class="file-list">
-        <van-grid :column-num="3" square :gutter="10">
-          <van-grid-item
-            class="grid-item"
-            v-for="(file,index) in fileList"
-            :key="index"
-          > 
-
-            <van-icon class="file-icon" size="35" name="description" />
-            <van-icon @click="clearFile(file.name)" class="clear-file" size="24" name="close" />
-            <p class="over-auto">{{file.name}}</p>
-          </van-grid-item>
-          <!-- <van-grid-item> -->
-            <div id="picker-file">上传附件</div>
-          <!-- </van-grid-item> -->
-        </van-grid>
-        
-      </div>
+      <uploader-model v-if="!isShowStep" :file="fileList" :uploader="myuploader"></uploader-model>
       <van-cell @click="navToFileList" v-if="isShowStep" title="附件" is-link />
 
       <van-steps v-if="isShowStep" style="padding-bottom:40px;" direction="vertical" :inactive-icon="yqh" :active-icon="getIcon()" :active="signatureList.length-1">
@@ -119,8 +102,8 @@ export default {
       },
       isShowAdvice:false,
       applyState: "您还未申请，请如实填写以下信息",
-      backText:"返回",
-      isShowBack:true,
+      backText:this.$store.state.isOrg ? "返回" : "",
+      isShowBack:this.$store.state.isOrg ? true : false,
       isShowSheet: false,
       isShowBottom: false,
       sheetaActions: [],
@@ -136,7 +119,7 @@ export default {
       docType: ".png, .jpg, .jpeg,.doc,.docx,.xml",
       isCommited: false,
       isShowConfirmButton: false, //确认完成核酸检测按钮是否展示
-      forbidden: false, //是否禁用 确认完成按钮
+      forbidden: true, //是否禁用 确认完成按钮
       // fieldObj,
       formDate: [
         {
@@ -265,73 +248,95 @@ export default {
   watch: {},
   beforeCreate() {},
   created() {
-    if(!this.$store.state.isOrg){
-      this.backText = "";
-      this.isShowBack = false;
-    }
-    console.log(this.$route.query);
-    
-    if (this.$route.query.isShowBottom != undefined) {
-      // 从审批进入,拿该条信息id请求数据，禁用表单
-      this.isCommited = true
-      let appId = this.$route.query.appId;
-      // this['appId'] = appId;
-      this.currentUser.appId = appId
-      this.getOrderData("",this.currentUser.appId)
-      this.$store.commit("changeTitle", "核酸检测审批");
-      if(JSON.parse(sessionStorage.getItem('isLoad'))){
-        this.isShowBottom = false;
-        sessionStorage.setItem('isLoad',false)
-      }else{
-        this.isShowBottom = this.$route.query.isShowBottom
+    let lastPath = sessionStorage.getItem('lastPath');
+    if(lastPath == '/'){//首页进入
+      if(this.$store.state.isFil){//已填写
+        this.getOrderData(this.$store.state.localToken,"");//获取已填写的数据
+        this.isCommited = true;//禁用表单
+        // this.$store.commit("changeRightTitle", "");//去掉提交按钮
+        // this.isShowBottom = false;//去掉审批按钮
+        this.isShowStep = true;//显示步骤条
+        this.isShowConfirmButton = true;//显示确认按钮
+        this.applyState = "您已提交申请，请等待审核完成后进行核酸检测";
+        this.$store.commit("changeTitle", "核酸检测申请");
+        this.currentUser = {localToken:this.$store.state.localToken,appId:''}
       }
+    }else if(lastPath == '/approval'){//审批进入
+      this.isShowBottom = true;
       this.isShowStep = true;
-      this.isShowConfirmButton = false;
-      this.$store.commit("changeRightTitle", "");
-      this.applyState = "";
-    } else {
-      this.$store.commit("changeTitle", "我的申请");
-      // 从主页进入，拿本机token请求验证是否填写
-      let localToken = this.$store.state.localToken
-      getUserState({token:localToken}).then(res => {
-        if (res.isFil && !this.isShowBottom) {
-          // 已填写 请求数据接口，设置所有选项为禁用
-          this.isCommited = true
-          this.$store.commit("changeRightTitle", "");
-          this.getOrderData(localToken,"");
-          this.currentUser.localToken = localToken;
-          this.isShowBottom = false;
-          if(JSON.parse(sessionStorage.getItem('onLoad'))){
-            this.isShowConfirmButton = false;
-          }
-          this.isShowStep = true;
-          this.applyState = "您已提交申请，请等待审核完成后进行核酸检测"
-        } else {
-          // 未填写
-          this.$store.commit("changeRightTitle", "提交");
-          this.formDate.forEach(item => {
-            item.name === 'name' ? item.value = res.name : "";
-            item.name === 'staffId' ? item.value = res.staffId : "";
-            item.name === 'phone' ? item.value = res.phone : "";
-            if(item.name === 'gender'){
-               item.value = res.SEX 
-               if(res.SEX === "男"){
-                 item.id = 1
-               }else if(res.SEX === "女"){
-                 item.id = 0
-               }
-            }
-            item.name === 'age' ? item.value = res.AGE : "";
-            item.name === 'identityCard' ? item.value = res.IDENTITY_ID || '' : "";
-            if(item.value){
-              item.isCommited = true
-            }
-          })
-          this.isShowConfirmButton = false;
-          this.applyState = "您还未申请，请如实填写以下信息";
-        }
-      });
+      this.getOrderData("",this.$route.query.appId);
+      this.applyState = ""
+      this.currentUser = {localToken:'',appId:this.$route.query.appId}
+    }else if(lastPath == '/enclosure'){
+      this.getOrderData("",this.$route.query.appId);
+      this.isCommited = true;//禁用表单
+      this.applyState = "您已提交申请，请等待审核完成后进行核酸检测";
+      this.isShowStep = true;
+      this.isShowBottom = this.$route.query.isShowBottom;
     }
+
+    // if(!this.$store.state.isOrg){
+    //   this.backText = "";
+    //   this.isShowBack = false;
+    // }
+    // console.log(this.$route.query);
+    
+    // if (this.$route.query.isShowBottom != undefined) {
+    //   // 从审批进入,拿该条信息id请求数据，禁用表单
+    //   this.isCommited = true
+    //   let appId = this.$route.query.appId;
+    //   // this['appId'] = appId;
+    //   this.currentUser.appId = appId
+    //   this.getOrderData("",this.currentUser.appId)
+    //   this.$store.commit("changeTitle", "核酸检测审批");
+    //   this.isShowBottom = this.$route.query.isShowBottom
+    //   this.isShowStep = true;
+    //   this.isShowConfirmButton = false;
+    //   this.$store.commit("changeRightTitle", "");
+    //   this.applyState = "";
+    // } else {
+    //   this.$store.commit("changeTitle", "我的申请");
+    //   // 从主页进入，拿本机token请求验证是否填写
+    //   let localToken = this.$store.state.localToken
+    //   getUserState({token:localToken}).then(res => {
+    //     if (res.isFil && !this.isShowBottom) {
+    //       // 已填写 请求数据接口，设置所有选项为禁用
+    //       this.isCommited = true
+    //       this.$store.commit("changeRightTitle", "");
+    //       this.getOrderData(localToken,"");
+    //       this.currentUser.localToken = localToken;
+    //       this.isShowBottom = false;
+    //       if(JSON.parse(sessionStorage.getItem('isLoad'))){
+    //         this.isShowConfirmButton = false;
+    //       }
+    //       this.isShowStep = true;
+    //       this.applyState = "您已提交申请，请等待审核完成后进行核酸检测"
+    //     } else {
+    //       // 未填写
+    //       this.$store.commit("changeRightTitle", "提交");
+    //       this.formDate.forEach(item => {
+    //         item.name === 'name' ? item.value = res.name : "";
+    //         item.name === 'staffId' ? item.value = res.staffId : "";
+    //         item.name === 'phone' ? item.value = res.phone : "";
+    //         if(item.name === 'gender'){
+    //            item.value = res.SEX 
+    //            if(res.SEX === "男"){
+    //              item.id = 1
+    //            }else if(res.SEX === "女"){
+    //              item.id = 0
+    //            }
+    //         }
+    //         item.name === 'age' ? item.value = res.AGE : "";
+    //         item.name === 'identityCard' ? item.value = res.IDENTITY_ID || '' : "";
+    //         if(item.value){
+    //           item.isCommited = true
+    //         }
+    //       })
+    //       this.isShowConfirmButton = false;
+    //       this.applyState = "您还未申请，请如实填写以下信息";
+    //     }
+    //   });
+    // }
   },
 
   mounted() {
@@ -347,7 +352,7 @@ export default {
 
     let that = this;
     this.myuploader.on("fileQueued", function(file) {
-      that.fileList.push(file.source.source);
+      that.fileList.push(file);
     });
   },
 
@@ -384,7 +389,7 @@ export default {
       }
 
       this.fileList.forEach((item, index) => {
-        _formData.append("file[]", item);
+        _formData.append("file[]", item.source.source);
       });
 
       console.log(_formData.getAll("file"));
@@ -434,7 +439,7 @@ export default {
         return;
       } else {
         // this.$router.back(-1);
-        console.log(this.$store.state.localToken);
+        // console.log(this.$store.state.localToken);
         
         this.$router.push({name:'Index',params:{token:this.$store.state.localToken}})
       }
@@ -450,7 +455,6 @@ export default {
       
       // 获取已提交订单详情
       getSignatureInfo(params).then(res => {
-        console.log(res)
         this.currentUser.appId = res.appCode;
         this.formDate.forEach((item,index) => {
           item.value = res[item.name]
@@ -460,7 +464,7 @@ export default {
         this.livingOutside = res.outLive == 0 ? false : true
         this.signatureList = res.signatureList;
         let lastele = this.signatureList.slice(-1)[0]
-        if(lastele.signatureStatus == 1){
+        if(lastele.signatureStatus == 1){//仅当通过时开放button
           this.forbidden = false;
         }
       })
@@ -504,13 +508,6 @@ export default {
         sessionStorage.setItem('isLoad',true)
       })
     },
-    clearFile(name){
-      this.fileList.forEach((item,index) =>{
-        if(item.name === name){
-          this.fileList.splice(index,1)
-        }
-      })
-  },
   getIcon(){
     let stepIconArr = [this.wqh, this.yqh,this.jj]
     let lastStatus = Number(this.signatureList.slice(-1)[0].signatureStatus)
@@ -576,45 +573,6 @@ export default {
     }
   }
 }
-
-
-#picker-file{
-  float: left;
-  margin-top: 10Px;
-  padding: 10Px;
-}
-.file-list {
-  .grid-item {
-    /deep/ .van-grid-item__content--center {
-      justify-content: space-between;
-    }
-    .clear-file{
-      position:absolute;
-      right:0;
-      top:0;
-    }
-    .over-auto{
-      width:100%;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-  }
-}
-/deep/ .webuploader-pick {
-  background-color: #07c160;
-  font-size: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 5px;
-  div{
-    width: 300Px !important;
-    height: 300Px !important;
-  }
-}
-
-
 
 .show-advice{
   background-color:#f7f8fa;

@@ -52,12 +52,14 @@ const router = new VueRouter({
 })
 
 router.beforeEach((to, from, next) => {
+	sessionStorage.setItem('lastPath',from.path)
 	if (to.path === "/") {
 		let localToken = UrlSearch('token') || sessionStorage.getItem('setLocalToken');
 		store.commit("setLocalToken", localToken)
 		sessionStorage.setItem('setLocalToken',localToken)
 		getUserState({ token: localToken }).then(res => {
 			store.commit('changeOrgState', res.isOrg)
+			store.commit('changeIsFil',res.isFil)
 			if (!res.isOrg) { //如果普通员工，跳转到核酸检测提交页
 				next('/apply')
 			}else{

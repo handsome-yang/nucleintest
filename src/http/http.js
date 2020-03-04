@@ -10,7 +10,8 @@ Vue.use(Toast);
 
 if (process.env.NODE_ENV == 'development') {
 	// axios.defaults.baseURL = 'http://192.168.1.31/Staff_management_app/home/NucleicAcid';
-	axios.defaults.baseURL = 'http://zzz.ngrok.ibanzhuan.cn/Staff_management_app/home/NucleicAcid';
+	// axios.defaults.baseURL = 'http://zzz.ngrok.ibanzhuan.cn/Staff_management_app/home/NucleicAcid';
+	axios.defaults.baseURL = 'https://iot.xiaofuonline.com/Staff_management_app/home/NucleicAcid';	
 } else if (process.env.NODE_ENV == "debug") {
 	axios.defaults.baseURL = ''
 } else if (process.env.NODE_ENV == "production") {

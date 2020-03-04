@@ -1,6 +1,5 @@
 <template>
   <div id="app">
-    
     <router-view ref="currentView" v-if="isRouterAlive" />
   </div>
 </template>
@@ -25,6 +24,7 @@ export default {
       this.$nextTick(function(){
         this.isRouterAlive = true;
         this.isLoad = true
+        sessionStorage.setItem('isLoad',true)
       })
       
     }

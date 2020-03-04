@@ -8,6 +8,7 @@ export default new Vuex.Store({
     pageTitle:'',
     rightText:'',
     isOrg:Number,
+    isFil:Number,
     localToken:String
   },
   mutations: {
@@ -19,6 +20,9 @@ export default new Vuex.Store({
     },
     changeOrgState(state,val){
       state.isOrg = val;
+    },
+    changeIsFil(state,val){
+      state.isFil = val
     },
     // 设置本机token
     setLocalToken(state,localToken){
