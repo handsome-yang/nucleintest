@@ -50,14 +50,30 @@
           :disabled="isCommited"
         />
       </van-cell-group>
+      <div class="file-list">
+        <van-grid :column-num="3" square :gutter="10">
+          <van-grid-item
+            class="grid-item"
+            v-for="(file,index) in fileList"
+            :key="index"
+          > 
 
-      <uploader-model v-if="!isShowStep" :fileList="fileList"></uploader-model>
+            <van-icon class="file-icon" size="35" name="description" />
+            <van-icon @click="clearFile(file.name)" class="clear-file" size="24" name="close" />
+            <p class="over-auto">{{file.name}}</p>
+          </van-grid-item>
+          <!-- <van-grid-item> -->
+            <div id="picker-file">上传附件</div>
+          <!-- </van-grid-item> -->
+        </van-grid>
+        
+      </div>
       <van-cell @click="navToFileList" v-if="isShowStep" title="附件" is-link />
 
-      <van-steps v-if="isShowStep" style="padding-bottom:40px;" direction="vertical" active-icon="records" :active="1">
+      <van-steps v-if="isShowStep" style="padding-bottom:40px;" direction="vertical" :inactive-icon="yqh" :active-icon="getIcon()" :active="signatureList.length-1">
         <van-step v-for="(signature,signatureIndex) in signatureList" :key="signatureIndex" v-show="signature.signatureStatus">
           <h3 class="step-title"><span v-show="signature.signTime">{{signature.signTime}}</span>&nbsp; <span>{{signature.name}}</span></h3>
-          <p class="step-des" v-show="signature.suggest">{{signature.comment}}</p>
+          <p class="step-des" v-show="signature.comment">{{signature.comment}}</p>
         </van-step>
       </van-steps>
     </van-form>
@@ -65,11 +81,23 @@
     <van-calendar v-model="isShowDatePicker" :min-date="minDate" :default-date="currentDate" @confirm="onConfirmDate" />
     <div class="bottom-button" v-show="isShowBottom">
       <van-button  @click="signature(2)" type="default">拒绝</van-button>
-      <van-button @click="signature(1)" type="primary">通过审核</van-button>
+      <van-button @click="isShowAdvice=true" type="primary">通过审核</van-button>
     </div>
     <div class="confirm-completion" v-show="isShowConfirmButton">
       <van-button type="primary" @click="confirmOrder" :disabled="forbidden">确认已完成核酸检测</van-button>
     </div>
+
+    <van-dialog v-model="isShowAdvice" class="show-advice" title="请输入审批意见" @cancel="isShowAdvice=false" @confirm="signature(1)" show-cancel-button>
+      <van-field
+        v-model="advices"
+        rows="4"
+        autosize
+        type="textarea"
+        maxlength="50"
+        placeholder="请输入审核意见"
+        show-word-limit
+      />
+    </van-dialog>
   </div>
 </template>
 
@@ -89,6 +117,7 @@ export default {
         localToken:'',
         appId:''
       },
+      isShowAdvice:false,
       applyState: "您还未申请，请如实填写以下信息",
       backText:"返回",
       isShowBack:true,
@@ -96,6 +125,10 @@ export default {
       isShowBottom: false,
       sheetaActions: [],
       isShowStep:false,//是否展示进度条
+      activeStep:1,
+      wqh:require('../assets/未签核.svg'),
+      yqh:require('../assets/已签核.svg'),
+      jj:require('../assets/拒绝.svg'),
       currentItem: "",
       isShowDatePicker: false,
       minDate:new Date(2010, 0, 1),
@@ -203,6 +236,7 @@ export default {
         }
       ],
       bufferDorm: false,
+      advices:"",//审核意见
       livingOutside: false,
       leavingMessage: "",
       messageName: "note",
@@ -237,7 +271,7 @@ export default {
     }
     console.log(this.$route.query);
     
-    if (this.$route.query.appId) {
+    if (this.$route.query.isShowBottom != undefined) {
       // 从审批进入,拿该条信息id请求数据，禁用表单
       this.isCommited = true
       let appId = this.$route.query.appId;
@@ -245,8 +279,9 @@ export default {
       this.currentUser.appId = appId
       this.getOrderData("",this.currentUser.appId)
       this.$store.commit("changeTitle", "核酸检测审批");
-      if(this.$parent.isLoad){
+      if(JSON.parse(sessionStorage.getItem('isLoad'))){
         this.isShowBottom = false;
+        sessionStorage.setItem('isLoad',false)
       }else{
         this.isShowBottom = this.$route.query.isShowBottom
       }
@@ -266,7 +301,9 @@ export default {
           this.getOrderData(localToken,"");
           this.currentUser.localToken = localToken;
           this.isShowBottom = false;
-          this.isShowConfirmButton = true;
+          if(JSON.parse(sessionStorage.getItem('onLoad'))){
+            this.isShowConfirmButton = false;
+          }
           this.isShowStep = true;
           this.applyState = "您已提交申请，请等待审核完成后进行核酸检测"
         } else {
@@ -423,8 +460,8 @@ export default {
         this.livingOutside = res.outLive == 0 ? false : true
         this.signatureList = res.signatureList;
         let lastele = this.signatureList.slice(-1)[0]
-        if(lastele.signatureStatus == 0 || lastele.signatureFlag == 0){
-          this.forbidden = true;
+        if(lastele.signatureStatus == 1){
+          this.forbidden = false;
         }
       })
     },
@@ -433,7 +470,7 @@ export default {
           token: this.$store.state.localToken,
           status:status,
           applicationCode:this.currentUser.appId,
-          comment:'同意'
+          comment:this.advices
         }
 
       setPass(params).then(res => {
@@ -447,14 +484,16 @@ export default {
       if(status == 2){
         this.reload()
       }
+      sessionStorage.setItem('isLoad',true)
     },
     navToFileList(){
-      this.$router.push({path:'/enclosure',query:this.currentUser})
+      this.$router.push({path:'/enclosure',query:{...this.currentUser,isShowBottom:this.isShowBottom}})
     },
     confirmOrder(){
       let params ={
         token:this.currentUser.localToken,
-        applicationCode:this.currentUser.appId
+        applicationCode:this.currentUser.appId,
+        isShowBottom:this.isShowBottom
       }
       confirmOd(params).then(res => {
         console.log('====================================');
@@ -462,8 +501,21 @@ export default {
         console.log('====================================');
         // this.$router.back(-1)
         this.reload()
+        sessionStorage.setItem('isLoad',true)
       })
-    }
+    },
+    clearFile(name){
+      this.fileList.forEach((item,index) =>{
+        if(item.name === name){
+          this.fileList.splice(index,1)
+        }
+      })
+  },
+  getIcon(){
+    let stepIconArr = [this.wqh, this.yqh,this.jj]
+    let lastStatus = Number(this.signatureList.slice(-1)[0].signatureStatus)
+    return stepIconArr[lastStatus]
+  }
   }
 };
 </script>
@@ -522,6 +574,62 @@ export default {
       margin: auto;
       border-radius: 20px;
     }
+  }
+}
+
+
+#picker-file{
+  float: left;
+  margin-top: 10Px;
+  padding: 10Px;
+}
+.file-list {
+  .grid-item {
+    /deep/ .van-grid-item__content--center {
+      justify-content: space-between;
+    }
+    .clear-file{
+      position:absolute;
+      right:0;
+      top:0;
+    }
+    .over-auto{
+      width:100%;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+  }
+}
+/deep/ .webuploader-pick {
+  background-color: #07c160;
+  font-size: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  div{
+    width: 300Px !important;
+    height: 300Px !important;
+  }
+}
+
+
+
+.show-advice{
+  background-color:#f7f8fa;
+  /deep/.van-dialog__header{
+    padding-bottom:24Px;
+  }
+  /deep/ .van-button{
+    background-color:#f7f8fa;
+  }
+}
+
+/deep/.van-step__icon{
+  img{
+    width:18px;
+    height:18px;
   }
 }
 </style>

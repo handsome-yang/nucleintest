@@ -78,18 +78,18 @@ export default {
       return i;
     },
     backClick(){
-      this.$router.push({path:'/apply',query:{isShowBottom:true,appId:this['currentUser'].appId}})
+      this.$router.push({path:'/apply',query:{isShowBottom:false,appId:this['currentUser'].appId}})
     },
     confirm(){
       let params = {
         token:this.$store.state.localToken,
         applicationCode:this.currentUser.appId,
-        checkTime:this.currentDate,
+        checkTime:this.timeResult,
         location:this.location.id
       }
       setCheckInfo(params).then(res => {
         console.log(res);
-        
+         this.$router.push({path:'/apply',query:{appId:this['currentUser'].appId,isShowBottom:false}})
       })
     },
     onSelect(item){

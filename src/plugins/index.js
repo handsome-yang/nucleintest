@@ -24,7 +24,8 @@ import {
     Search,
     RadioGroup, 
     Radio,
-    List 
+    List,
+    Dialog
 } from 'vant';
 
 Vue.use(Button);
@@ -53,5 +54,6 @@ Vue.use(Search);
 Vue.use(RadioGroup);
 Vue.use(Radio);
 Vue.use(List);
+Vue.use(Dialog);
 Vue.prototype.$toast = Toast
 
