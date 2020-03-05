@@ -8,7 +8,7 @@
       > 
 
         <van-icon class="file-icon" size="35" name="description" />
-        <van-icon @click="clearFile(file.name,file.id)" class="clear-file" size="24" name="close" />
+        <van-icon @click="send(file.name,file.id)" class="clear-file" size="24" name="close" />
         <p class="over-auto">{{file.name}}</p>
       </van-grid-item>
       <!-- <van-grid-item> -->
@@ -23,21 +23,22 @@
 export default {
   props:{
     fileList:Array,
-    myuploader:Object
   },
   data() {
     return {
 
     }
   },
+  created() {
+  },
   methods: {
-    clearFile(name,id){
-      this.fileList.forEach((item,index) =>{
-        if(item.name === name){
-          this.fileList.splice(index,1)
-        }
-      })
-      this.myuploader.removeFile(id,true)
+    send(name,id){
+      // this.fileList.forEach((item,index) =>{
+      //   if(item.name === name){
+      //     this.fileList.splice(index,1)
+      //   }
+      // })
+      this.$emit("clearFile",name,id)
   }
   },
 };

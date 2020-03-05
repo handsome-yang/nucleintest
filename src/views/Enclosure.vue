@@ -1,14 +1,5 @@
 <template>
   <div class="container">
-    <van-nav-bar
-      title="附件"
-      left-text="返回"
-      left-arrow
-      fixed
-      @click-left="onClickLeft"
-      class="title-style"
-      style=" background-color: #5d8eec;"
-    />
     <ul>
       <li class="list-item" v-for="(fileItem,fileIndex) in fileList" :key="fileIndex" @click="openFile(fileItem.fileUrl)"  >
         <div class="left"><van-icon class="icon" name="column" size="40" /></div>
@@ -23,26 +14,22 @@
 <script>
 import {getFileList} from '@/http/http'
 export default {
+  props:['currentUser'],
   data() {
     return {
       fileList:[{
         fileName:'xxx.doc',
         fileSize:'128kb'
-      }]
+      }],
     };
   },
   created() {
-    sessionStorage.setItem('currentUser',JSON.stringify(this.$route.query))
-    this['currentUser'] = this.$route.query || sessionStorage.getItem('currentUser');
     let params = {
       token:this['currentUser'].localToken,
       applicationCode:this['currentUser'].appId
     }
 
     getFileList(params).then(res => {
-      console.log('====================================');
-      console.log(res);
-      console.log('====================================');
       let fileInfo = res.reduce((_arr,currentItem) => [..._arr,{fileName:currentItem.filePath.substring(currentItem.filePath.lastIndexOf('/')+1),fileSize:currentItem.size,fileUrl:currentItem.filePath.substring(1)}],[])
       this.fileList = fileInfo
     })

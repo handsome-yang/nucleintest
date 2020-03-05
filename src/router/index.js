@@ -60,6 +60,7 @@ router.beforeEach((to, from, next) => {
 		getUserState({ token: localToken }).then(res => {
 			store.commit('changeOrgState', res.isOrg)
 			store.commit('changeIsFil',res.isFil)
+			store.commit('changeUserInfo',res)
 			if (!res.isOrg) { //如果普通员工，跳转到核酸检测提交页
 				next('/apply')
 			}else{

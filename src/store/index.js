@@ -9,7 +9,8 @@ export default new Vuex.Store({
     rightText:'',
     isOrg:Number,
     isFil:Number,
-    localToken:String
+    localToken:String,
+    userInfo:Object
   },
   mutations: {
     changeTitle(state,text){
@@ -23,6 +24,9 @@ export default new Vuex.Store({
     },
     changeIsFil(state,val){
       state.isFil = val
+    },
+    changeUserInfo(state,val){
+      state.userInfo = val
     },
     // 设置本机token
     setLocalToken(state,localToken){

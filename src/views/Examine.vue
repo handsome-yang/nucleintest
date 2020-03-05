@@ -89,7 +89,8 @@ export default {
       }
       setCheckInfo(params).then(res => {
         console.log(res);
-         this.$router.push({path:'/apply',query:{appId:this['currentUser'].appId,isShowBottom:false}})
+        //  this.$router.push({path:'/apply',query:{appId:this['currentUser'].appId,isShowBottom:false}})
+        this.$router.back(-1)
       })
     },
     onSelect(item){

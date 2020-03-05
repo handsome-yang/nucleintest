@@ -1,7 +1,8 @@
 <template>
-  <div class="container">
+  <div>
+  
     <van-nav-bar
-      :title="$store.state.pageTitle"
+      :title="titleText"
       :left-text="backText"
       :right-text="$store.state.rightText"
       :left-arrow="isShowBack"
@@ -9,8 +10,9 @@
       @click-left="onClickLeft"
       @click-right="onClickRight"
       class="title-style"
-      style=" background-color: #5d8eec;"
+      style="background-color: #5d8eec;"
     />
+  <div v-if="!isShowEnclosure" class="container">
     <span v-show="applyState" class="apply-title">{{applyState}}</span>
     <van-form @submit="onSubmit" style="margin-bottom:50Px;" class="form-wrap" ref="form">
       <van-cell-group v-for="(item,index) in formDate" :key="index">
@@ -50,11 +52,11 @@
           :disabled="isCommited"
         />
       </van-cell-group>
-      <uploader-model v-if="!isShowStep" :file="fileList" :uploader="myuploader"></uploader-model>
+      <uploader-model v-show="!isShowStep" :fileList="fileList" @clearFile="clearFile"></uploader-model>
       <van-cell @click="navToFileList" v-if="isShowStep" title="附件" is-link />
 
-      <van-steps v-if="isShowStep" style="padding-bottom:40px;" direction="vertical" :inactive-icon="yqh" :active-icon="getIcon()" :active="signatureList.length-1">
-        <van-step v-for="(signature,signatureIndex) in signatureList" :key="signatureIndex" v-show="signature.signatureStatus">
+      <van-steps v-show="isShowStep" style="padding-bottom:40px;" direction="vertical" :inactive-icon="yqh" :active-icon="activeIcon" :active="signatureList.length-1">
+        <van-step v-for="(signature,signatureIndex) in signatureList" :key="signatureIndex" v-show="signature['signatureStatus']">
           <h3 class="step-title"><span v-show="signature.signTime">{{signature.signTime}}</span>&nbsp; <span>{{signature.name}}</span></h3>
           <p class="step-des" v-show="signature.comment">{{signature.comment}}</p>
         </van-step>
@@ -63,14 +65,14 @@
     <van-action-sheet v-model="isShowSheet" :actions="sheetaActions" @select="onSelectSheet" />
     <van-calendar v-model="isShowDatePicker" :min-date="minDate" :default-date="currentDate" @confirm="onConfirmDate" />
     <div class="bottom-button" v-show="isShowBottom">
-      <van-button  @click="signature(2)" type="default">拒绝</van-button>
-      <van-button @click="isShowAdvice=true" type="primary">通过审核</van-button>
+      <van-button  @click="isShowAdvice=true;signatureButton=2;" type="default">拒绝</van-button>
+      <van-button @click="isShowAdvice=true;signatureButton=1" type="primary">通过审核</van-button>
     </div>
     <div class="confirm-completion" v-show="isShowConfirmButton">
       <van-button type="primary" @click="confirmOrder" :disabled="forbidden">确认已完成核酸检测</van-button>
     </div>
 
-    <van-dialog v-model="isShowAdvice" class="show-advice" title="请输入审批意见" @cancel="isShowAdvice=false" @confirm="signature(1)" show-cancel-button>
+    <van-dialog v-model="isShowAdvice" class="show-advice" title="请输入审批意见" @cancel="isShowAdvice=false" @confirm="signature(signatureButton)" show-cancel-button>
       <van-field
         v-model="advices"
         rows="4"
@@ -82,27 +84,35 @@
       />
     </van-dialog>
   </div>
+  <enclosure :currentUser="currentUser" v-if="isShowEnclosure" />
+</div>
 </template>
 
 <script>
 // import fieldObj from "../http/field";
 import UploaderModel from "@/components/UploaderModel";
+import enclosure from '@/views/Enclosure'
 import { getSelectList, addFormData, getUserState,getSignatureInfo,setPass,confirmOd } from "@/http/http";
 export default {
   name: "Apply",
   inject:['reload'],
   components: {
-    UploaderModel
+    UploaderModel,
+    enclosure
   },
   data() {
     return {
+      isShowEnclosure:false,
       currentUser:{
         localToken:'',
         appId:''
       },
       isShowAdvice:false,
+      activeIcon:"",
+      isOver:false,
       applyState: "您还未申请，请如实填写以下信息",
       backText:this.$store.state.isOrg ? "返回" : "",
+      titleText:"核酸检测申请",
       isShowBack:this.$store.state.isOrg ? true : false,
       isShowSheet: false,
       isShowBottom: false,
@@ -120,6 +130,7 @@ export default {
       isCommited: false,
       isShowConfirmButton: false, //确认完成核酸检测按钮是否展示
       forbidden: true, //是否禁用 确认完成按钮
+      isRead:false,
       // fieldObj,
       formDate: [
         {
@@ -226,20 +237,7 @@ export default {
       fileList: [],
       myuploader: "",
       signatureList: [
-        {
-          fullName: "陈彦申",
-          dateTime: "2020/2/20",
-          suggest: "同意"
-        },
-        {
-          fullName: "周铭嘉",
-          dateTime: "2020/2/24",
-          suggest: "同意"
-        },
-        {
-          fullName: "邓嘉麟",
-          dateTime: "2020/2/26"
-        }
+
       ]
     };
   },
@@ -250,93 +248,49 @@ export default {
   created() {
     let lastPath = sessionStorage.getItem('lastPath');
     if(lastPath == '/'){//首页进入
-      if(this.$store.state.isFil){//已填写
-        this.getOrderData(this.$store.state.localToken,"");//获取已填写的数据
-        this.isCommited = true;//禁用表单
-        // this.$store.commit("changeRightTitle", "");//去掉提交按钮
-        // this.isShowBottom = false;//去掉审批按钮
-        this.isShowStep = true;//显示步骤条
-        this.isShowConfirmButton = true;//显示确认按钮
-        this.applyState = "您已提交申请，请等待审核完成后进行核酸检测";
-        this.$store.commit("changeTitle", "核酸检测申请");
-        this.currentUser = {localToken:this.$store.state.localToken,appId:''}
-      }
+      let localInfo = this.$store.state.userInfo
+      if(this.$store.state.isFil){//已填写         
+          this.$store.commit("changeRightTitle", "");
+          this.getOrderData(this.$store.state.localToken,"");//获取已填写的数据
+          this.isCommited = true;//禁用表单
+          // this.isShowBottom = false;//去掉审批按钮
+          this.isShowStep = true;//显示步骤条
+          // this.isShowConfirmButton = true;//显示确认按钮
+          this.applyState =  "您已提交申请，请等待审核完成后进行核酸检测";
+          this.currentUser = {localToken:this.$store.state.localToken,appId:''}
+        }else{
+          this.$store.commit("changeRightTitle", "提交");
+          this.formDate.forEach(item => {
+          item.name === 'name' ? item.value = localInfo.name : "";
+          item.name === 'staffId' ? item.value = localInfo.staffId : "";
+          item.name === 'phone' ? item.value = localInfo.phone : "";
+          if(item.name === 'gender'){
+            item.value = localInfo.SEX 
+            if(localInfo.SEX === "男"){
+                item.id = 1
+              }else if(localInfo.SEX === "女"){
+                item.id = 0
+              }
+            }
+            item.name === 'age' ? item.value = localInfo.AGE : "";
+            item.name === 'identityCard' ? item.value = localInfo.IDENTITY_ID || '' : "";
+            if(item.value){
+              item.isCommited = true
+            }
+          })
+          // this.isShowConfirmButton = false;
+          this.applyState = "您还未申请，请如实填写以下信息";
+        }
+          
     }else if(lastPath == '/approval'){//审批进入
-      this.isShowBottom = true;
-      this.isShowStep = true;
-      this.getOrderData("",this.$route.query.appId);
-      this.applyState = ""
-      this.currentUser = {localToken:'',appId:this.$route.query.appId}
-    }else if(lastPath == '/enclosure'){
-      this.getOrderData("",this.$route.query.appId);
       this.isCommited = true;//禁用表单
-      this.applyState = "您已提交申请，请等待审核完成后进行核酸检测";
       this.isShowStep = true;
-      this.isShowBottom = this.$route.query.isShowBottom;
+      this.getOrderData("",this.$route.query.appId);
+      // this.isShowBottom = !this["isOver"];
+      this.titleText = "核酸检测审批";
+      this.currentUser = {localToken:'',appId:this.$route.query.appId}
     }
 
-    // if(!this.$store.state.isOrg){
-    //   this.backText = "";
-    //   this.isShowBack = false;
-    // }
-    // console.log(this.$route.query);
-    
-    // if (this.$route.query.isShowBottom != undefined) {
-    //   // 从审批进入,拿该条信息id请求数据，禁用表单
-    //   this.isCommited = true
-    //   let appId = this.$route.query.appId;
-    //   // this['appId'] = appId;
-    //   this.currentUser.appId = appId
-    //   this.getOrderData("",this.currentUser.appId)
-    //   this.$store.commit("changeTitle", "核酸检测审批");
-    //   this.isShowBottom = this.$route.query.isShowBottom
-    //   this.isShowStep = true;
-    //   this.isShowConfirmButton = false;
-    //   this.$store.commit("changeRightTitle", "");
-    //   this.applyState = "";
-    // } else {
-    //   this.$store.commit("changeTitle", "我的申请");
-    //   // 从主页进入，拿本机token请求验证是否填写
-    //   let localToken = this.$store.state.localToken
-    //   getUserState({token:localToken}).then(res => {
-    //     if (res.isFil && !this.isShowBottom) {
-    //       // 已填写 请求数据接口，设置所有选项为禁用
-    //       this.isCommited = true
-    //       this.$store.commit("changeRightTitle", "");
-    //       this.getOrderData(localToken,"");
-    //       this.currentUser.localToken = localToken;
-    //       this.isShowBottom = false;
-    //       if(JSON.parse(sessionStorage.getItem('isLoad'))){
-    //         this.isShowConfirmButton = false;
-    //       }
-    //       this.isShowStep = true;
-    //       this.applyState = "您已提交申请，请等待审核完成后进行核酸检测"
-    //     } else {
-    //       // 未填写
-    //       this.$store.commit("changeRightTitle", "提交");
-    //       this.formDate.forEach(item => {
-    //         item.name === 'name' ? item.value = res.name : "";
-    //         item.name === 'staffId' ? item.value = res.staffId : "";
-    //         item.name === 'phone' ? item.value = res.phone : "";
-    //         if(item.name === 'gender'){
-    //            item.value = res.SEX 
-    //            if(res.SEX === "男"){
-    //              item.id = 1
-    //            }else if(res.SEX === "女"){
-    //              item.id = 0
-    //            }
-    //         }
-    //         item.name === 'age' ? item.value = res.AGE : "";
-    //         item.name === 'identityCard' ? item.value = res.IDENTITY_ID || '' : "";
-    //         if(item.value){
-    //           item.isCommited = true
-    //         }
-    //       })
-    //       this.isShowConfirmButton = false;
-    //       this.applyState = "您还未申请，请如实填写以下信息";
-    //     }
-    //   });
-    // }
   },
 
   mounted() {
@@ -392,10 +346,9 @@ export default {
         _formData.append("file[]", item.source.source);
       });
 
-      console.log(_formData.getAll("file"));
       addFormData(_formData).then(res => {
-        console.log(res);
-        this.$store.state.rightText = "";
+        this.$store.commit('changeRightTitle',"");
+        this.$store.commit('changeIsFil',1)
         this.$toast(res.reason);
         this.reload()
       });
@@ -435,13 +388,15 @@ export default {
       return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
     },
     onClickLeft() {
-      if (!this.$store.state.isOrg) {
-        return;
-      } else {
-        // this.$router.back(-1);
-        // console.log(this.$store.state.localToken);
-        
-        this.$router.push({name:'Index',params:{token:this.$store.state.localToken}})
+      if(!this.isShowEnclosure){
+        if(this.$store.state.isOrg){
+          this.$router.back(-1)
+        }else{
+          return
+        }
+      }else{
+        this.isShowEnclosure = false;
+        this.reload()
       }
     },
     onClickRight() {
@@ -452,7 +407,6 @@ export default {
         token:token,
         applicationCode:appId
       }
-      
       // 获取已提交订单详情
       getSignatureInfo(params).then(res => {
         this.currentUser.appId = res.appCode;
@@ -463,10 +417,24 @@ export default {
         this.bufferDorm = res.bufferDormitory == 0 ? false :true
         this.livingOutside = res.outLive == 0 ? false : true
         this.signatureList = res.signatureList;
-        let lastele = this.signatureList.slice(-1)[0]
-        if(lastele.signatureStatus == 1){//仅当通过时开放button
-          this.forbidden = false;
+        this.isShowConfirmButton = res.isRead == 1 ? true: false;//是否审核完成
+        let lastele = this.signatureList.slice(-1)[0];
+        let stepIconArr = [this.wqh, this.yqh,this.jj]
+        let lastStatus = Number(lastele.signatureStatus)
+        this.activeIcon = stepIconArr[lastStatus]
+        this["isOver"] = lastele.signatureStatus == 1 ? true :false
+        console.log(this.$store.state.userInfo.name)
+        if(appId){//审批进入
+          let singState = this.signatureList.filter(item => {
+            return item.name == this.$store.state.userInfo.name
+          })
+          this.isShowBottom = singState[0].signatureStatus == 0 ? true : false
+        }else{//本机进入
+          let _applyStateArr = ["您已提交申请，请等待审核完成后进行核酸检测","审核已完成","审核已被驳回"]
+          this.applyState = _applyStateArr[lastStatus]
+          if(this["isOver"] == 1){this.forbidden = false;}
         }
+       
       })
     },
     signature(status){
@@ -487,11 +455,14 @@ export default {
       })
       if(status == 2){
         this.reload()
+        // this.isShowBottom = false;
       }
       sessionStorage.setItem('isLoad',true)
     },
     navToFileList(){
-      this.$router.push({path:'/enclosure',query:{...this.currentUser,isShowBottom:this.isShowBottom}})
+      this.isShowEnclosure = true;
+      this.titleText = "附件";
+      this.isShowBack = true;
     },
     confirmOrder(){
       let params ={
@@ -500,19 +471,19 @@ export default {
         isShowBottom:this.isShowBottom
       }
       confirmOd(params).then(res => {
-        console.log('====================================');
-        console.log(res);
-        console.log('====================================');
-        // this.$router.back(-1)
-        this.reload()
-        sessionStorage.setItem('isLoad',true)
+        // this.reload()
+        this.isRead = false;
       })
     },
-  getIcon(){
-    let stepIconArr = [this.wqh, this.yqh,this.jj]
-    let lastStatus = Number(this.signatureList.slice(-1)[0].signatureStatus)
-    return stepIconArr[lastStatus]
-  }
+  clearFile(name,id){
+    this.fileList.forEach((item,index) =>{
+      if(item.name === name){
+        this.fileList.splice(index,1)
+        }
+      })
+      this.myuploader.removeFile(id,true)
+    // console.log(name,id)
+    }
   }
 };
 </script>

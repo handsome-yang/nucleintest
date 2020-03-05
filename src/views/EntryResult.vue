@@ -84,10 +84,10 @@ export default {
       fd.append("result",item.resultRadio)
       fd.append("file[]",item.file[0])
       updateCheckResult(fd).then(res => {
-        this.reload()
+        this.reload();
       })
     },
-    onLoad(){
+    onLoad(search){
       let params = {
         token:this.$store.state.localToken,
         type:3,
@@ -104,7 +104,11 @@ export default {
             item["file"] = []
             item["currentButtonText"] = "上传证明"
           });
-          this.dataList.push(...objArr);
+          if(search){
+            this.dataList = objArr
+          }else{
+            this.dataList.push(...objArr);
+          }
           this.loading = false;
           this.currentPage++
         }else if(res.list.length == 0){
@@ -113,7 +117,7 @@ export default {
     })
     },
     onSearch(){
-      this.onLoad()
+      this.onLoad(true)
     },
   },
 };
