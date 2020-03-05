@@ -464,18 +464,11 @@ export default {
 
       setPass(params).then(res => {
         if(res.nextNum == 0 && status == 1){
-          //  this.$router.push({path:'/examine',query:this.currentUser})
           this.isShowExamine = true;
         }else{
-          // this.$router.back(-1)
           this.reload();
         }
       })
-      if(status == 2){
-        this.reload()
-        // this.isShowBottom = false;
-      }
-      sessionStorage.setItem('isLoad',true)
     },
     navToFileList(){
       this.isShowEnclosure = true;
@@ -489,7 +482,6 @@ export default {
         isShowBottom:this.isShowBottom
       }
       confirmOd(params).then(res => {
-        // this.reload()
         this.isRead = false;
       })
     },
