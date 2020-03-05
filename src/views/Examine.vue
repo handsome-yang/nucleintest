@@ -37,9 +37,6 @@ export default {
       isShowLocation:false,
       location:'',
       actionsLocation:[
-        { name: '选项' },
-        { name: '选项' },
-        { name: '选项' }
       ]
     };
   },

@@ -289,6 +289,7 @@ export default {
       // this.isShowBottom = !this["isOver"];
       this.titleText = "核酸检测审批";
       this.currentUser = {localToken:'',appId:this.$route.query.appId}
+      this.$store.commit("changeRightTitle","")
     }
 
   },
@@ -424,16 +425,16 @@ export default {
         this.activeIcon = stepIconArr[lastStatus]
         this["isOver"] = lastele.signatureStatus == 1 ? true :false
         console.log(this.$store.state.userInfo.name)
-        if(appId){//审批进入
+        // if(appId){//审批进入
           let singState = this.signatureList.filter(item => {
             return item.name == this.$store.state.userInfo.name
           })
           this.isShowBottom = singState[0].signatureStatus == 0 ? true : false
-        }else{//本机进入
+        // }else{//本机进入
           let _applyStateArr = ["您已提交申请，请等待审核完成后进行核酸检测","审核已完成","审核已被驳回"]
           this.applyState = _applyStateArr[lastStatus]
           if(this["isOver"] == 1){this.forbidden = false;}
-        }
+        // }
        
       })
     },
