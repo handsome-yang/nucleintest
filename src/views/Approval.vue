@@ -63,7 +63,6 @@ export default {
         {
           name: "未审核",
           tabData: [
-          {},{},{}
           ],
           currenPage:1
         },

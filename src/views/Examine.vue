@@ -1,14 +1,5 @@
 <template>
   <div class="container">
-    <van-nav-bar
-      title="核酸检测审批"
-      left-text="返回"
-      left-arrow
-      fixed
-      @click-left="backClick"
-      class="title-style"
-      style=" background-color: #5d8eec;"
-    />
     <van-cell title="检测时间" is-link :value="timeResult" @click="openDatePicker" />
     <van-cell title="检测地点" @click="isShowLocation = true" is-link :value="location.name" />
     <van-button type="info" class="confirm-button" @click="confirm">确认</van-button>

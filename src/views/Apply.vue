@@ -85,24 +85,28 @@
     </van-dialog>
   </div>
   <enclosure :currentUser="currentUser" v-if="isShowEnclosure" />
+  <examine v-if="isShowExamine" />
 </div>
 </template>
 
 <script>
 // import fieldObj from "../http/field";
 import UploaderModel from "@/components/UploaderModel";
-import enclosure from '@/views/Enclosure'
+import Enclosure from '@/views/Enclosure'
+import Examine from '@/views/Examine'
 import { getSelectList, addFormData, getUserState,getSignatureInfo,setPass,confirmOd } from "@/http/http";
 export default {
   name: "Apply",
   inject:['reload'],
   components: {
     UploaderModel,
-    enclosure
+    Enclosure,
+    Examine
   },
   data() {
     return {
       isShowEnclosure:false,
+      isShowExamine:false,
       currentUser:{
         localToken:'',
         appId:''
@@ -253,9 +257,7 @@ export default {
           this.$store.commit("changeRightTitle", "");
           this.getOrderData(this.$store.state.localToken,"");//获取已填写的数据
           this.isCommited = true;//禁用表单
-          // this.isShowBottom = false;//去掉审批按钮
           this.isShowStep = true;//显示步骤条
-          // this.isShowConfirmButton = true;//显示确认按钮
           this.applyState =  "您已提交申请，请等待审核完成后进行核酸检测";
           this.currentUser = {localToken:this.$store.state.localToken,appId:''}
         }else{
@@ -389,15 +391,24 @@ export default {
       return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
     },
     onClickLeft() {
-      if(!this.isShowEnclosure){
-        if(this.$store.state.isOrg){
-          this.$router.back(-1)
-        }else{
-          return
-        }
-      }else{
+      // if(!this.isShowEnclosure && !this.isShowExamine){
+      //   if(this.$store.state.isOrg){
+      //     this.$router.back(-1)
+      //   }else{
+      //     return
+      //   }
+      // }else {
+      //   this.isShowEnclosure = false;
+      //   this.reload()
+      // }
+      if(this.isShowEnclosure){
         this.isShowEnclosure = false;
-        this.reload()
+      }else if(this.isShowExamine){
+        this.isShowExamine = false
+      }else if(this.$store.state.isOrg){
+        this.$router.back(-1)
+      }else{
+        return
       }
     },
     onClickRight() {
@@ -418,23 +429,28 @@ export default {
         this.bufferDorm = res.bufferDormitory == 0 ? false :true
         this.livingOutside = res.outLive == 0 ? false : true
         this.signatureList = res.signatureList;
-        this.isShowConfirmButton = res.isRead == 1 ? true: false;//是否审核完成
         let lastele = this.signatureList.slice(-1)[0];
         let stepIconArr = [this.wqh, this.yqh,this.jj]
         let lastStatus = Number(lastele.signatureStatus)
         this.activeIcon = stepIconArr[lastStatus]
         this["isOver"] = lastele.signatureStatus == 1 ? true :false
         console.log(this.$store.state.userInfo.name)
-        // if(appId){//审批进入
+        if(appId){//审批进入
           let singState = this.signatureList.filter(item => {
             return item.name == this.$store.state.userInfo.name
           })
           this.isShowBottom = singState[0].signatureStatus == 0 ? true : false
-        // }else{//本机进入
+        }else{//本机进入
           let _applyStateArr = ["您已提交申请，请等待审核完成后进行核酸检测","审核已完成","审核已被驳回"]
           this.applyState = _applyStateArr[lastStatus]
-          if(this["isOver"] == 1){this.forbidden = false;}
-        // }
+          if(this["isOver"] == 1){//审批流程完成
+            this.isRead = res.isRead;//记录是否确认流程
+            this.forbidden = false;
+            this.isShowConfirmButton=!Number(this.isRead);//1.已确认 0.未确认
+          }else{//审批流程 未完成
+            this.isShowConfirmButton = true;
+          }
+        }
        
       })
     },
@@ -448,7 +464,8 @@ export default {
 
       setPass(params).then(res => {
         if(res.nextNum == 0 && status == 1){
-           this.$router.push({path:'/examine',query:this.currentUser})
+          //  this.$router.push({path:'/examine',query:this.currentUser})
+          this.isShowExamine = true;
         }else{
           // this.$router.back(-1)
           this.reload();
