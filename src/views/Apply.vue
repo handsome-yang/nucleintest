@@ -391,6 +391,7 @@ export default {
       return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
     },
     onClickLeft() {
+      this.isShowBack = this.$store.state.isOrg ? true : false
       if(this.isShowEnclosure){
         if(this.$refs.enclosure.isShowFile){
           this.$refs.enclosure.isShowFile = false
