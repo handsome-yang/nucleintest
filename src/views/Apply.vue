@@ -84,7 +84,7 @@
       />
     </van-dialog>
   </div>
-  <enclosure :currentUser="currentUser" v-if="isShowEnclosure" />
+  <enclosure ref="enclosure" :currentUser="currentUser" v-if="isShowEnclosure" />
   <examine v-if="isShowExamine" />
 </div>
 </template>
@@ -392,7 +392,11 @@ export default {
     },
     onClickLeft() {
       if(this.isShowEnclosure){
-        this.isShowEnclosure = false;
+        if(this.$refs.enclosure.isShowFile){
+          this.$refs.enclosure.isShowFile = false
+        }else{
+          this.isShowEnclosure = false;
+        }
       }else if(this.isShowExamine){
         this.isShowExamine = false
       }else if(this.$store.state.isOrg){
