@@ -12,7 +12,7 @@
       class="title-style"
       style="background-color: #5d8eec;"
     />
-  <div v-if="!isShowEnclosure" class="container">
+  <div v-if="!isShowEnclosure && !isShowExamine" class="container">
     <span v-show="applyState" class="apply-title">{{applyState}}</span>
     <van-form @submit="onSubmit" style="margin-bottom:50Px;" class="form-wrap" ref="form">
       <van-cell-group v-for="(item,index) in formDate" :key="index">
@@ -30,12 +30,12 @@
       </van-cell-group>
       <van-cell-group>
         <van-cell center title="缓冲宿舍区">
-          <van-switch slot="right-icon" size="24" v-model="bufferDorm" :disabled="isCommited" />
+          <van-switch slot="right-icon" size="24" @change="livingOutside = !bufferDorm"  v-model="bufferDorm" :disabled="isCommited" />
         </van-cell>
       </van-cell-group>
       <van-cell-group>
         <van-cell center title="外住">
-          <van-switch slot="right-icon" size="24" v-model="livingOutside" :disabled="isCommited" />
+          <van-switch slot="right-icon" size="24" @change="bufferDorm = !livingOutside;" v-model="livingOutside" :disabled="isCommited" />
         </van-cell>
       </van-cell-group>
       <van-cell-group>
@@ -391,16 +391,6 @@ export default {
       return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
     },
     onClickLeft() {
-      // if(!this.isShowEnclosure && !this.isShowExamine){
-      //   if(this.$store.state.isOrg){
-      //     this.$router.back(-1)
-      //   }else{
-      //     return
-      //   }
-      // }else {
-      //   this.isShowEnclosure = false;
-      //   this.reload()
-      // }
       if(this.isShowEnclosure){
         this.isShowEnclosure = false;
       }else if(this.isShowExamine){
@@ -435,18 +425,22 @@ export default {
         this.activeIcon = stepIconArr[lastStatus]
         this["isOver"] = lastele.signatureStatus == 1 ? true :false
         console.log(this.$store.state.userInfo.name)
+        let _applyStateArr = ["您已提交申请，请等待审核完成后进行核酸检测","审核已完成","审核已被驳回"]
+        this.applyState = _applyStateArr[lastStatus]
         if(appId){//审批进入
           let singState = this.signatureList.filter(item => {
             return item.name == this.$store.state.userInfo.name
           })
           this.isShowBottom = singState[0].signatureStatus == 0 ? true : false
         }else{//本机进入
-          let _applyStateArr = ["您已提交申请，请等待审核完成后进行核酸检测","审核已完成","审核已被驳回"]
-          this.applyState = _applyStateArr[lastStatus]
+          
           if(this["isOver"] == 1){//审批流程完成
             this.isRead = res.isRead;//记录是否确认流程
             this.forbidden = false;
             this.isShowConfirmButton=!Number(this.isRead);//1.已确认 0.未确认
+            if(Number(this.isRead) == 1) {
+              this.applyState = "已确认"
+              }
           }else{//审批流程 未完成
             this.isShowConfirmButton = true;
           }
@@ -464,6 +458,7 @@ export default {
 
       setPass(params).then(res => {
         if(res.nextNum == 0 && status == 1){
+          this.isShowBottom = false
           this.isShowExamine = true;
         }else{
           this.reload();
@@ -482,7 +477,7 @@ export default {
         isShowBottom:this.isShowBottom
       }
       confirmOd(params).then(res => {
-        this.isRead = false;
+        this.reload()
       })
     },
   clearFile(name,id){

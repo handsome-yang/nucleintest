@@ -76,9 +76,8 @@ export default {
         location:this.location.id
       }
       setCheckInfo(params).then(res => {
-        console.log(res);
-        //  this.$router.push({path:'/apply',query:{appId:this['currentUser'].appId,isShowBottom:false}})
-        this.$parent.isShowExamine = false
+        this.$parent.isShowExamine = false;
+        this.$parent.reload()
       })
     },
     onSelect(item){
