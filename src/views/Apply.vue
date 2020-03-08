@@ -30,12 +30,12 @@
       </van-cell-group>
       <van-cell-group>
         <van-cell center title="缓冲宿舍区">
-          <van-switch slot="right-icon" size="24" v-model="bufferDorm" :disabled="isCommited" />
+          <van-switch slot="right-icon" size="24" @change="livingOutside = !bufferDorm"  v-model="bufferDorm" :disabled="isCommited" />
         </van-cell>
       </van-cell-group>
       <van-cell-group>
         <van-cell center title="外住">
-          <van-switch slot="right-icon" size="24" v-model="livingOutside" :disabled="isCommited" />
+          <van-switch slot="right-icon" size="24" @change="bufferDorm = !livingOutside;" v-model="livingOutside" :disabled="isCommited" />
         </van-cell>
       </van-cell-group>
       <van-cell-group>
@@ -72,7 +72,7 @@
       <van-button  @click="isShowAdvice=true;signatureButton=2;" type="default">拒绝</van-button>
       <van-button @click="isShowAdvice=true;signatureButton=1" type="primary">通过审核</van-button>
     </div>
-    <div style="position: fixed;bottom: 0;zIndex: 999;width:100%; textAlign:center;">
+    <div style="position: fixed;bottom: 0;zIndex: 999;width:100%; textAlign:center;margin-bottom:50Px;">
       <van-button v-if="isResubmitButton" size="large" type="primary" @click="resetForm">重新申请</van-button>
     </div>
     <div class="confirm-completion" v-show="isShowConfirmButton">
@@ -91,7 +91,7 @@
       />
     </van-dialog>
   </div>
-  <enclosure :currentUser="currentUser" v-if="isShowEnclosure" />
+  <enclosure ref="enclosure" :currentUser="currentUser" v-if="isShowEnclosure" />
   <examine v-if="isShowExamine" />
 </div>
 </template>
@@ -403,8 +403,13 @@ export default {
       return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
     },
     onClickLeft() {
+      this.isShowBack = this.$store.state.isOrg ? true : false
       if(this.isShowEnclosure){
-        this.isShowEnclosure = false;
+        if(this.$refs.enclosure.isShowFile){
+          this.$refs.enclosure.isShowFile = false
+        }else{
+          this.isShowEnclosure = false;
+        }
       }else if(this.isShowExamine){
         this.isShowExamine = false
       }else if(this.$store.state.isOrg){
@@ -443,14 +448,15 @@ export default {
           this.userCheckTime = res.checkTime;
           this.userCheckPlace = res.location;
         }
+        let _applyStateArr = ["您已提交申请，请等待审核完成后进行核酸检测","审核已完成","审核已被驳回"]
+        this.applyState = _applyStateArr[lastStatus]
         if(appId){//审批进入
           let singState = this.signatureList.filter(item => {
             return item.name == this.$store.state.userInfo.name
           })
           this.isShowBottom = singState[0].signatureStatus == 0 ? true : false;
         }else{//本机进入
-          let _applyStateArr = ["您已提交申请，请等待审核完成后进行核酸检测","审核已完成","审核已被驳回"]
-          this.applyState = _applyStateArr[lastStatus]
+          
           if(this["isOver"] == 1){//审批流程完成
             console.log(res)
             this.isRead = res.isRead;//记录是否确认流程
@@ -476,6 +482,7 @@ export default {
 
       setPass(params).then(res => {
         if(res.nextNum == 0 && status == 1){
+          this.isShowBottom = false
           this.isShowExamine = true;
         }else{
           this.reload();

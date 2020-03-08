@@ -76,7 +76,7 @@ export default {
         location:this.location.id
       }
       setCheckInfo(params).then(res => {
-        console.log(res);
+        this.$parent.isShowExamine = false;
         this.$parent.reload()
       })
     },

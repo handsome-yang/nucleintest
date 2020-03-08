@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-    <ul>
+    <ul v-if="!isShowFile">
       <li class="list-item" v-for="(fileItem,fileIndex) in fileList" :key="fileIndex" @click="openFile(fileItem.fileUrl)"  >
         <div class="left"><van-icon class="icon" name="column" size="40" /></div>
         <div class="right">
@@ -9,52 +9,49 @@
         </div>
       </li>
     </ul>
+      <iframe v-if="isShowFile" :src="file" width="100%" height="100%" ref="iframe" id="iframe" class="iframe" frameborder="0"></iframe>
+    
   </div>
 </template>
 <script>
+import Preview from '@/views/Preview'
 import {getFileList} from '@/http/http'
 export default {
   props:['currentUser'],
+  components:{
+    Preview
+  },
   data() {
     return {
       fileList:[{
         fileName:'xxx.doc',
         fileSize:'128kb'
       }],
+      file:'',
+      isShowFile:false
     };
   },
   created() {
     let params = {
       token:this['currentUser'].localToken,
-      applicationCode:this['currentUser'].appId
+      applicationCode:this['currentUser'].appId,
     }
-
     getFileList(params).then(res => {
       let fileInfo = res.reduce((_arr,currentItem) => [..._arr,{fileName:currentItem.filePath.substring(currentItem.filePath.lastIndexOf('/')+1),fileSize:currentItem.size,fileUrl:currentItem.filePath.substring(1)}],[])
-      this.fileList = fileInfo
+      this.fileList = fileInfo;
     })
   },
   methods:{
-    onClickLeft(){
-      if(this.currentUser.appId){
-         this.$router.push({path:'/apply',query:{appId:this['currentUser'].appId,isShowBottom:this['currentUser'].isShowBottom}})
-        // this.$router.back(-1)
-      }else{
-        this.$router.push('/')
-      }
-    },
     openFile(path){
-      // window.location.href = ""
-      // console.log()
       let baseUrl = ''
       if(process.env.NODE_ENV == "development"){
         baseUrl = "http://zzz.ngrok.ibanzhuan.cn/Staff_management_app"
       }else if(process.env.NODE_ENV == "production"){
         baseUrl = "https://iot.xiaofuonline.com/Staff_management_app"
       }
-      // return
-      // window.location.href = baseUrl + path
-      this.$router.push({name:'preview',query:{...this['currentUser'],url:baseUrl + path}})
+      this.isShowFile = true;
+      this.file = baseUrl + path;
+   
     }
   }
 };
