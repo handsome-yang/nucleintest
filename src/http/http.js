@@ -115,3 +115,6 @@ export const setCheckInfo = params => { return post('/setCheckInfo', QS.stringif
 
 // 录入结果
 export const updateCheckResult = params => { return post('/updateCheckResult', params, { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }).then(res => res) }
+
+// 重置表单 重新提交
+export const resubmit = params => { return post('/resubmit',QS.stringify(params)).then(res => res)}

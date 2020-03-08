@@ -12,7 +12,7 @@
       class="title-style"
       style="background-color: #5d8eec;"
     />
-  <div v-if="!isShowEnclosure" class="container">
+  <div v-if="!isShowEnclosure && !isShowExamine" class="container">
     <span v-show="applyState" class="apply-title">{{applyState}}</span>
     <van-form @submit="onSubmit" style="margin-bottom:50Px;" class="form-wrap" ref="form">
       <van-cell-group v-for="(item,index) in formDate" :key="index">
@@ -62,11 +62,18 @@
         </van-step>
       </van-steps>
     </van-form>
+    <van-cell-group v-if="isShowUserCheck">
+      <van-cell title="检测时间" :value="userCheckTime" />
+      <van-cell title="检测地点" :value="userCheckPlace" />
+    </van-cell-group>
     <van-action-sheet v-model="isShowSheet" :actions="sheetaActions" @select="onSelectSheet" />
     <van-calendar v-model="isShowDatePicker" :min-date="minDate" :default-date="currentDate" @confirm="onConfirmDate" />
     <div class="bottom-button" v-show="isShowBottom">
       <van-button  @click="isShowAdvice=true;signatureButton=2;" type="default">拒绝</van-button>
       <van-button @click="isShowAdvice=true;signatureButton=1" type="primary">通过审核</van-button>
+    </div>
+    <div style="position: fixed;bottom: 0;zIndex: 999;width:100%; textAlign:center;">
+      <van-button v-if="isResubmitButton" size="large" type="primary" @click="resetForm">重新申请</van-button>
     </div>
     <div class="confirm-completion" v-show="isShowConfirmButton">
       <van-button type="primary" @click="confirmOrder" :disabled="forbidden">确认已完成核酸检测</van-button>
@@ -94,7 +101,7 @@
 import UploaderModel from "@/components/UploaderModel";
 import Enclosure from '@/views/Enclosure'
 import Examine from '@/views/Examine'
-import { getSelectList, addFormData, getUserState,getSignatureInfo,setPass,confirmOd } from "@/http/http";
+import { getSelectList, addFormData, getUserState,getSignatureInfo,setPass,confirmOd,resubmit } from "@/http/http";
 export default {
   name: "Apply",
   inject:['reload'],
@@ -123,9 +130,9 @@ export default {
       sheetaActions: [],
       isShowStep:false,//是否展示进度条
       activeStep:1,
-      wqh:require('../assets/未签核.svg'),
-      yqh:require('../assets/已签核.svg'),
-      jj:require('../assets/拒绝.svg'),
+      wqh:'images/未签核.svg',
+      yqh:'images/已签核.svg',
+      jj:'images/拒绝.svg',
       currentItem: "",
       isShowDatePicker: false,
       minDate:new Date(2010, 0, 1),
@@ -242,7 +249,11 @@ export default {
       myuploader: "",
       signatureList: [
 
-      ]
+      ],
+      isResubmitButton:false,
+      isShowUserCheck:false,
+      userCheckTime:'',//提示用户检测的时间
+      userCheckPlace:'',//提示用户检测的地点
     };
   },
   computed: {},
@@ -259,7 +270,7 @@ export default {
           this.isCommited = true;//禁用表单
           this.isShowStep = true;//显示步骤条
           this.applyState =  "您已提交申请，请等待审核完成后进行核酸检测";
-          this.currentUser = {localToken:this.$store.state.localToken,appId:''}
+          this.currentUser.localToken = this.$store.state.localToken;
         }else{
           this.$store.commit("changeRightTitle", "提交");
           this.formDate.forEach(item => {
@@ -286,6 +297,7 @@ export default {
           
     }else if(lastPath == '/approval'){//审批进入
       this.isCommited = true;//禁用表单
+      this.applyState = false;
       this.isShowStep = true;
       this.getOrderData("",this.$route.query.appId);
       // this.isShowBottom = !this["isOver"];
@@ -391,16 +403,6 @@ export default {
       return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
     },
     onClickLeft() {
-      // if(!this.isShowEnclosure && !this.isShowExamine){
-      //   if(this.$store.state.isOrg){
-      //     this.$router.back(-1)
-      //   }else{
-      //     return
-      //   }
-      // }else {
-      //   this.isShowEnclosure = false;
-      //   this.reload()
-      // }
       if(this.isShowEnclosure){
         this.isShowEnclosure = false;
       }else if(this.isShowExamine){
@@ -435,18 +437,28 @@ export default {
         this.activeIcon = stepIconArr[lastStatus]
         this["isOver"] = lastele.signatureStatus == 1 ? true :false
         console.log(this.$store.state.userInfo.name)
+
+        if(this["isOver"] == 1){
+          this.isShowUserCheck = true;
+          this.userCheckTime = res.checkTime;
+          this.userCheckPlace = res.location;
+        }
         if(appId){//审批进入
           let singState = this.signatureList.filter(item => {
             return item.name == this.$store.state.userInfo.name
           })
-          this.isShowBottom = singState[0].signatureStatus == 0 ? true : false
+          this.isShowBottom = singState[0].signatureStatus == 0 ? true : false;
         }else{//本机进入
           let _applyStateArr = ["您已提交申请，请等待审核完成后进行核酸检测","审核已完成","审核已被驳回"]
           this.applyState = _applyStateArr[lastStatus]
           if(this["isOver"] == 1){//审批流程完成
+            console.log(res)
             this.isRead = res.isRead;//记录是否确认流程
             this.forbidden = false;
             this.isShowConfirmButton=!Number(this.isRead);//1.已确认 0.未确认
+            if(Number(this.isRead) == 1){ this.applyState = "已确认"}
+          }else if(lastStatus == 2){//被驳回
+            this.isResubmitButton = true;
           }else{//审批流程 未完成
             this.isShowConfirmButton = true;
           }
@@ -482,7 +494,8 @@ export default {
         isShowBottom:this.isShowBottom
       }
       confirmOd(params).then(res => {
-        this.isRead = false;
+        // this.isRead = false;
+        this.reload()
       })
     },
   clearFile(name,id){
@@ -493,6 +506,16 @@ export default {
       })
       this.myuploader.removeFile(id,true)
     // console.log(name,id)
+    },
+    resetForm(){//被驳回 重置表单
+      let params = {
+        token:this.currentUser.localToken,
+        applicationCode:this.currentUser.appId
+      }
+      resubmit(params).then(res => {
+        this.$store.commit('changeIsFil',0)
+        this.reload()
+      })
     }
   }
 };
