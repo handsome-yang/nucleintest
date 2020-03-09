@@ -72,7 +72,7 @@
       <van-button  @click="isShowAdvice=true;signatureButton=2;" type="default">拒绝</van-button>
       <van-button @click="isShowAdvice=true;signatureButton=1" type="primary">通过审核</van-button>
     </div>
-    <div style="position: fixed;bottom: 0;zIndex: 999;width:100%; textAlign:center;margin-bottom:50Px;">
+    <div style="position: fixed;bottom: 0;zIndex: 999;width:100%; textAlign:center;">
       <van-button v-if="isResubmitButton" size="large" type="primary" @click="resetForm">重新申请</van-button>
     </div>
     <div class="confirm-completion" v-show="isShowConfirmButton">
@@ -130,9 +130,9 @@ export default {
       sheetaActions: [],
       isShowStep:false,//是否展示进度条
       activeStep:1,
-      wqh:'images/未签核.svg',
-      yqh:'images/已签核.svg',
-      jj:'images/拒绝.svg',
+      wqh:'images/unsigned.svg',
+      yqh:'images/signed.svg',
+      jj:'images/refuse.svg',
       currentItem: "",
       isShowDatePicker: false,
       minDate:new Date(2010, 0, 1),
